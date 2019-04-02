@@ -1,12 +1,13 @@
 """Microservice worth your weight.
 
 Usage:
-  mswyw     --runtimeProvider=<fqnOrJsonOrJsonPath> --codeInfoProvider=<fqnOrJsonOrJsonPath> \r\n \
-            [--providerParams=<fqnOrJsonOrJsonPath>]
+  mswyw     --codeInfoProvider=<fqnOrJsonOrJsonPath> \r\n \
+            [--providerParams=<fqnOrJsonOrJsonPath>] \r\n \
+            [--runtimeProvider=<fqnOrJsonOrJsonPath>]
 
 
 Options:
-  --runtimeProvider=<fqnOrJsonOrJsonPath>         Where to get runtime metrics. Either a fully qualified name of a python module or a json literal or json file.
+  --runtimeProvider=<fqnOrJsonOrJsonPath>         Where to get runtime metrics. Either a fully qualified name of a python module or a json literal or json file. [default: nrelic]
   --codeInfoProvider=<fqnOrJsonOrJsonPath>        Where to get code metrics. Either a fully qualified name of a python module or a json literal or json file.
   --providerParams=<fqnOrJsonOrJsonPath>          Custom parameters to the providers used. [default:{}]
 
@@ -50,13 +51,24 @@ def params_as_dict(fqnOrJsonOrJsonPath, extra_args):
                 raise ValueError()
             return provider_module.compute_params(extra_args)
 
+def calc_mswyw(ms_runtime_data, ms_code_info_data):
+    #TODO: we still need to take into account how many "features" each microservices contributes with (value)
+    #we could infer function points from LOC based on Steve McConnel's material. Or let the user override
+    total_cost = 0.0
+    total_value = 0.0
+    for metrics in ms_runtime_data:
+        total_cost += metrics["mem"] + 1000*metrics["cpu"]
+        total_value += 1000*metrics["apdex"] + 1000*metrics["rpm"]
+    return total_value / total_cost
+
+
 def main():
     start_time = datetime.datetime.now()
     arguments = docopt(__doc__, version=VERSION)
     print("\r\n====== mswyw by Marcio Marchini: marcio@BetterDeveloper.net ==========")
     print(arguments)
     try:
-        provider_params = arguments.get("--providerParams",{})
+        provider_params = params_as_dict(arguments.get("--providerParams", {}),"")
     except ValueError:
         print("Invalid --providerParams")
         exit(-1)
@@ -71,13 +83,13 @@ def main():
         print("Invalid --codeInfoProvider")
         exit(-3)
     print(ms_runtime_data)
-    print(ms_runtime_data)
-    print(ms_code_info_data)
+    mswyw_score = calc_mswyw (ms_runtime_data, ms_code_info_data)
     end_time = datetime.datetime.now()
     print("\r\n--------------------------------------------------")
     print("Started : %s" % str(start_time))
     print("Finished: %s" % str(end_time))
     print("Total: %s" % str(end_time-start_time))
+    print("mswyw score: %s" % str(mswyw_score))
     print("--------------------------------------------------")
 
 if __name__ == '__main__':
