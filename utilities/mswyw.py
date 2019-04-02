@@ -59,7 +59,7 @@ def calc_mswyw(ms_runtime_data, ms_code_info_data):
     for metrics in ms_runtime_data:
         total_cost += metrics["mem"] + 1000*metrics["cpu"]
         total_value += 1000*metrics["apdex"] + 1000*metrics["rpm"]
-    return total_value / total_cost
+    return 1000 * (total_value / total_cost)
 
 
 def main():

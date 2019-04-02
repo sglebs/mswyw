@@ -32,7 +32,7 @@ def _get_app_instance_metrics(app_id, api_key, instance_id):
     apdex = root.findall('.//score')[0]
     cpu_percent = root.findall('.//percent')[0]
     rpm = root.findall('.//calls_per_minute')[0]
-    return {"mem":int(memory_usage.text), "apdex": float(apdex.text), "cpu": float(cpu_percent.text), "rpm": int(rpm.text)}
+    return {"mem":int(memory_usage.text), "apdex": float(apdex.text), "cpu": float(cpu_percent.text), "rpm": float(rpm.text)}
 
 TIMEOUT=3 #seconds
 def connect_and_get (url, api_key, verify=True, timeout=TIMEOUT):

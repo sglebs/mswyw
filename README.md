@@ -3,7 +3,7 @@
 ## What it is
 
 A little utility that gathers some metrics about your deployed services and computes 1 metric - mswyw. 
-It quantifies if your microservice is worth its weight. The formula is simple:
+It quantifies if your [microservice](https://en.wikipedia.org/wiki/Microservices) is worth its weight. The formula is simple:
 
 mswyw = VALUE / COST
 
@@ -13,7 +13,7 @@ Examples of *VALUE* attributes:
 * Number of User Story Points it implements (a measure of features/value to the user)
 * Number of Function Points it implements (a measure of features/value to the user)
 * APDEX - a measure of user satisfaction with the performance of your (micro)service
-* Error Rate - a measure of user insatisfaction with your service
+* Error Rate - a measure of user lack of satisfaction with your service
 * Average response time - the faster your service responds, the happier the consumers will be.
   
 Examples of *COST* attributes:
@@ -32,16 +32,20 @@ much better suited for a reusable library. If it is to be shared by many project
 into a separate git repo and produce a binary JAR (if in Java) which people can import. It does *not* need to 
 be a microservice.
 
-I agree with Bob Martin that one should be able to defer the deploy decision. I should be able to deploy code 
-with a REST façade of 20 endpoints or as 2 services each with a REST façade of 10 endpoints each. Or with a SOAP 
-façade. Or both. Or GraphQL. You get the idea - don't hardcode the façade technology into your reusable core. 
-Read about hexagonal architecture, for example.
+I agree with Bob Martin that one should be able to [defer the deploy decision](https://blog.cleancoder.com/uncle-bob/2014/10/01/CleanMicroserviceArchitecture.html).
+I should be able to deploy code  with a REST façade of 20 endpoints or as 2 services each with a REST façade of 10 
+endpoints each. Or with a SOAP façade. Or both. Or GraphQL. You get the idea - don't hardcode the façade technology 
+into your reusable core. Read about [clean architectures](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html), for example.
 
 By obtaning a metric we hope to let people compare the "fat factor" of their (micro)services.
 
 ## How to install
 
-*** pip install
+Make sure your Python has paver installed (pip3 install paver) and then run:
+```
+pip3 install git+https://github.com/sglebs/mswyw
+```
+
 
 ## How to run
 
@@ -53,6 +57,10 @@ we assume it is a json file with the values we need.
 You also need the same for info about the code (lines of code, language, etc). The same applies here about the value 
 being either a fully qualified name of a module or a literal json or a json file.
 
+Currently the only runtimeProvider supported is New Relic (nrelic, the default by the way) but we also plan to add Elastic APM support.
+
+Example:
+
 `
 mswyw --runtimeProvider=nrelic 
       --codeInfoProvider={"loc":120,"lang":"java"} 
@@ -60,5 +68,8 @@ mswyw --runtimeProvider=nrelic
 `
 
 
+## Special Thanks
+
+We would like to thank [Softplan](http://www.softplan.com.br) for supporting the development of this utility.  
 
 
