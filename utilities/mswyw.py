@@ -11,7 +11,7 @@ Options:
   --runtimeProvider=<fqnOrJsonOrJsonPath>    Where to get runtime metrics. Either a fully qualified name of a python module or a json literal or json file. [default: nrelic]
   --codeInfoProvider=<fqnOrJsonOrJsonPath>   Where to get code metrics. Either a fully qualified name of a python module or a json literal or json file.
   --providerParams=<fqnOrJsonOrJsonPath>     Custom parameters to the providers used. [default: {}]
-  --coefficients=<json>                      Custom formula coefficients [default: {"endpoints":100.0,"mem":1.0,"cpu":1000.0,"apdex":1000.0,"rpm":1000.0,"total":1000.0}]
+  --coefficients=<json>                      Custom formula coefficients [default: {"endpoints":100.0,"mem":1.0,"cpu":1000.0,"apdex":1000.0,"rpm":1000.0,"epm":100.0,"total":1000.0}]
 
 
 Author:
@@ -59,7 +59,7 @@ def calc_mswyw(ms_runtime_data, ms_code_info_data, formula_coefficients):
     total_cost = 0.0
     total_value = 0.0
     for metrics in ms_runtime_data:
-        total_cost += formula_coefficients["mem"]*metrics["mem"] + formula_coefficients["cpu"]*metrics["cpu"]
+        total_cost += formula_coefficients["mem"]*metrics["mem"] + formula_coefficients["cpu"]*metrics["cpu"] + formula_coefficients["epm"]*metrics["epm"]
         total_value += formula_coefficients["apdex"]*metrics["apdex"] + formula_coefficients["rpm"]*metrics["rpm"] + formula_coefficients["endpoints"]*metrics["endpoints"]
     return formula_coefficients["total"] * (total_value / total_cost)
 

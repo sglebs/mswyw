@@ -61,14 +61,15 @@ def _get_app_instance_ids_and_language(app_id, api_key):
 
 
 def _get_app_instance_metrics(app_id, api_key, instance_id):
-    url = "https://api.newrelic.com/v2/applications/%s/instances/%s/metrics/data.xml?names[]=Memory/Physical&names[]=Apdex&names[]=CPU/User/Utilization&names[]=WebTransactionTotalTime&summarize=true" % (app_id,instance_id)
+    url = "https://api.newrelic.com/v2/applications/%s/instances/%s/metrics/data.xml?names[]=Memory/Physical&names[]=Apdex&names[]=CPU/User/Utilization&names[]=WebTransactionTotalTime&names[]=Errors/all&summarize=true" % (app_id,instance_id)
     newrelic_result = connect_and_get(url,api_key)
     root = ET.fromstring(newrelic_result.content)
     memory_usage = root.find(".//metrics/metric/[name='Memory/Physical']/timeslices/timeslice/values/used_bytes_by_host")
     apdex = root.find(".//metrics/metric/[name='Apdex']/timeslices/timeslice/values/score")
     cpu_percent = root.find(".//metrics/metric/[name='CPU/User/Utilization']/timeslices/timeslice/values/percent")
-    rpm = root.find(".//metrics/metric/[name='WebTransactionTotalTime']/timeslices/timeslice/values//calls_per_minute")
-    return {"mem":int(memory_usage.text), "apdex": float(apdex.text), "cpu": float(cpu_percent.text), "rpm": float(rpm.text)}
+    rpm = root.find(".//metrics/metric/[name='WebTransactionTotalTime']/timeslices/timeslice/values/calls_per_minute")
+    epm = root.find(".//metrics/metric/[name='Errors/all']/timeslices/timeslice/values/errors_per_minute")
+    return {"mem":int(memory_usage.text), "apdex": float(apdex.text), "cpu": float(cpu_percent.text), "rpm": float(rpm.text), "epm": float(epm.text)}
 
 def _get_app_ids_by_name(app_name_regex, api_key):
     url = "https://api.newrelic.com/v2/applications.xml"

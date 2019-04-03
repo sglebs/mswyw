@@ -13,7 +13,7 @@ Examples of *VALUE* attributes:
 * Number of [Use Case Points](https://en.wikipedia.org/wiki/Use_Case_Points) it implements (a measure of features/value to the user)
 * Number of [Function Points](https://en.wikipedia.org/wiki/Function_point) it implements (a measure of features/value to the user)
 * [APDEX](https://en.wikipedia.org/wiki/Apdex) - a measure of user satisfaction with the performance of your (micro)service
-* Error Rate - a measure of user lack of satisfaction with your service
+* Error Rate (epm - errors per minute) - a measure of user lack of satisfaction with your service
 * Requests per minute (rpm) - the more your service can take, the leaner it is to run.
   
 Examples of *COST* attributes:
@@ -26,7 +26,7 @@ Examples of *COST* attributes:
 Currently the formula is (note that a,b,c etc are just coefficients which you can tweak - we provide defaults):
 
 `
-mswyw = a * [( b * APDEX + c * RPM + d * endpoints) / (e * mem + f * cpu)]
+mswyw = a * [( b * APDEX + c * RPM + d * endpoints) / (e * mem + f * cpu + g * epm)]
 `
 
 The coefficients can be overriden passing --coefficients as a json, with these key names for teh coefficients:
@@ -37,6 +37,7 @@ The coefficients can be overriden passing --coefficients as a json, with these k
 - d: "endpoints"
 - e: "mem"
 - f: "cpu"
+- g: "epm"
 
 Don't worry, we provide defaults. But you can tweak when you want. For example, use 0.0 for a coefficient to kick
 that element our of the formula (say "I don't want number of endpoints to have any influence on it" - pass "endpoints":0.0).
