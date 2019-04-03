@@ -84,6 +84,7 @@ mswyw --runtimeProvider=nrelic
 `
 
 You can also get consolidated results for a collection of apps by name (regex) if you prefer:
+
 `
 mswyw --runtimeProvider=nrelic 
       --providerParams={"nrelic.APPS":"foo.*bar$","nrelic.APIKEY":"ABCDEFG"}
