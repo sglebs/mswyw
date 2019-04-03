@@ -37,7 +37,7 @@ The coefficients can be overriden passing --coefficients as a json, with these k
 - d: "mem"
 - e: "cpu"
 
-Don't worry, we provide defaults. But you can tweak when you want. FOr example, use 0.0 for a coefficient to kick
+Don't worry, we provide defaults. But you can tweak when you want. For example, use 0.0 for a coefficient to kick
 that element our of the formula (say "I don't want rpm to have any influence on it" - pass "rpm":0.0).
 
 
@@ -55,7 +55,7 @@ I should be able to deploy code  with a REST façade of 20 endpoints or as 2 ser
 endpoints each. Or with a SOAP façade. Or both. Or GraphQL. You get the idea - don't hardcode the façade technology 
 into your reusable core. Read about [clean architectures](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html), for example.
 
-By obtaning a metric we hope to let people compare the "fat factor" of their (micro)services.
+By obtaning a metric we hope to let people compare the "fat factor" (worth your weight) of their (micro)services.
 
 ## How to install
 
