@@ -3,6 +3,7 @@
 import requests
 from socket import error as SocketError
 import xml.etree.ElementTree as ET
+import json
 
 # Get instances: https://rpm.newrelic.com/api/explore/application_instances/list?application_id=nnnnnn
 # Metric names: https://rpm.newrelic.com/api/explore/application_instances/names?instance_id=nnnnnnnn&application_id=nnnnnnnn
@@ -20,6 +21,8 @@ def compute_params(extra_args):
 def _get_app_instance_ids(app_id, api_key):
     url = "https://api.newrelic.com/v2/applications/%s/instances.json" % app_id
     newrelic_result = connect_and_get(url,api_key)
+    if newrelic_result.status_code != 200:
+        raise ValueError(json.loads(newrelic_result.text)["error"]["title"])
     json_reply = newrelic_result.json()
     return [instance["id"] for instance in json_reply["application_instances"]]
 

@@ -74,8 +74,8 @@ def main():
         exit(-1)
     try:
         ms_runtime_data = params_as_dict(arguments.get("--runtimeProvider"), provider_params)
-    except ValueError:
-        print("Invalid --runtimeProvider")
+    except ValueError as e:
+        print("Invalid --runtimeProvider: %s" % repr(e))
         exit(-2)
     try:
         ms_code_info_data = params_as_dict(arguments.get("--codeInfoProvider"), provider_params)
