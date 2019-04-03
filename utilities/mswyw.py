@@ -50,7 +50,7 @@ def params_as_dict(fqnOrJsonOrJsonPath, extra_args):
             try:  # fully qualified name of python module?
                 provider_module = importlib.import_module(fqnOrJsonOrJsonPath)
             except ModuleNotFoundError:
-                raise ValueError()
+                raise ValueError("Cannot resolve %s" % fqnOrJsonOrJsonPath)
             return provider_module.compute_params(extra_args)
 
 def calc_mswyw(ms_runtime_data, ms_code_info_data, formula_coefficients):
@@ -71,27 +71,16 @@ def main():
     print(arguments)
     try:
         formula_coefficients = json.loads(arguments.get("--coefficients", "{}"))
-    except ValueError:
-        print("Invalid --coefficients")
-        exit(-1)
-    try:
         provider_params = params_as_dict(arguments.get("--providerParams", {}),"")
-    except ValueError:
-        print("Invalid --providerParams")
-        exit(-2)
-    try:
         ms_runtime_data = params_as_dict(arguments.get("--runtimeProvider"), provider_params)
-    except ValueError as e:
-        print("Invalid --runtimeProvider: %s" % repr(e))
-        exit(-3)
-    try:
         ms_code_info_data = params_as_dict(arguments.get("--codeInfoProvider"), provider_params)
-    except ValueError:
-        print("Invalid --codeInfoProvider")
-        exit(-4)
-    print("\r\nInstances:\r\n %s" % ms_runtime_data)
-    mswyw_score = calc_mswyw (ms_runtime_data, ms_code_info_data, formula_coefficients)
+        mswyw_score = calc_mswyw(ms_runtime_data, ms_code_info_data, formula_coefficients)
+    except ValueError as e:
+        print("Problem: %s" % repr(e))
+        exit(-1)
     end_time = datetime.datetime.now()
+    print("\r\n--------------------------------------------------")
+    print("\r\nInstances:\r\n %s" % ms_runtime_data)
     print("\r\n--------------------------------------------------")
     print("Started : %s" % str(start_time))
     print("Finished: %s" % str(end_time))
