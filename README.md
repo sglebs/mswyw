@@ -12,7 +12,7 @@ Examples of *VALUE* attributes:
 * Number of endpoints (presumably the more endpoints, the more functionality, the more useful. Controversial)
 * Number of [Use Case Points](https://en.wikipedia.org/wiki/Use_Case_Points) it implements (a measure of features/value to the user)
 * Number of [Function Points](https://en.wikipedia.org/wiki/Function_point) it implements (a measure of features/value to the user)
-* APDEX - a measure of user satisfaction with the performance of your (micro)service
+* [APDEX](https://en.wikipedia.org/wiki/Apdex) - a measure of user satisfaction with the performance of your (micro)service
 * Error Rate - a measure of user lack of satisfaction with your service
 * Requests per minute (rpm) - the more your service can take, the leaner it is to run.
   
