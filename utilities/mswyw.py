@@ -83,7 +83,7 @@ def sanitize_coefficients(coefs):
 def main():
     start_time = datetime.datetime.now()
     arguments = docopt(__doc__, version=VERSION)
-    print("\r\n====== mswyw by Marcio Marchini: marcio@BetterDeveloper.net ==========")
+    print("\r\n====== mswyw - see https://github.com/sglebs/mswyw ==========")
     print(arguments)
     try:
         formula_coefficients = json.loads(arguments.get("--coefficients", "{}"))
@@ -93,7 +93,9 @@ def main():
         mswyw_score = calc_mswyw(ms_runtime_data, formula_coefficients)
         end_time = datetime.datetime.now()
         print("\r\n--------------------------------------------------")
-        print("\r\nInstances:\r\n %s" % ms_runtime_data)
+        print("\r\nInstances:")
+        for runtime_data in ms_runtime_data:
+            print(runtime_data)
         print("\r\n--------------------------------------------------")
         print("Started : %s" % str(start_time))
         print("Finished: %s" % str(end_time))

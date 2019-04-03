@@ -25,15 +25,17 @@ def compute_params(extra_args):
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
     result = []
     for app_id in app_ids:
-        app_instance_ids_and_language = _get_app_instance_ids_and_language(app_id, api_key)
-        app_instance_ids = [id_and_language[0] for id_and_language in app_instance_ids_and_language]
-        app_instance_languages = [id_and_language[1] for id_and_language in app_instance_ids_and_language]
+        app_instance_info = _get_app_instance_ids_and_language(app_id, api_key)
+        app_instance_ids = [info[0] for info in app_instance_info]
+        app_instance_languages = [info[1] for info in app_instance_info]
+        app_instance_appnames = [info[2] for info in app_instance_info]
         metric_dicts = [_get_app_instance_metrics(app_id, api_key, instance_id) for instance_id in app_instance_ids]
-        for instance_id, language, metrics in zip(app_instance_ids, app_instance_languages, metric_dicts):
+        for instance_id, language, app_name, metrics in zip(app_instance_ids, app_instance_languages, app_instance_appnames, metric_dicts):
             # we could cheat and instead of looping we could get for the 1st and assume they are all equal. just for speed.
             metrics["endpoints"] = _get_number_of_endpoints(app_id, api_key, instance_id)
-            metrics["_id"]=instance_id
+            metrics["_id"] = instance_id
             metrics["_lang"] = language
+            metrics["_appname"] = app_name
         result.extend(metric_dicts)
     return result
 
@@ -57,7 +59,8 @@ def _get_app_instance_ids_and_language(app_id, api_key):
     if newrelic_result.status_code != 200:
         raise ValueError(json.loads(newrelic_result.text)["error"]["title"])
     json_reply = newrelic_result.json()
-    return [[instance["id"],instance["language"]] for instance in json_reply["application_instances"]] # "application_name" would be useful too
+    return [[instance["id"],instance["language"],instance["application_name"]]
+            for instance in json_reply["application_instances"]]
 
 
 def _get_app_instance_metrics(app_id, api_key, instance_id):
