@@ -11,7 +11,7 @@ Options:
   --runtimeProvider=<fqnOrJsonOrJsonPath>    Where to get runtime metrics. Either a fully qualified name of a python module or a json literal or json file. [default: nrelic]
   --codeInfoProvider=<fqnOrJsonOrJsonPath>   Where to get code metrics. Either a fully qualified name of a python module or a json literal or json file.
   --providerParams=<fqnOrJsonOrJsonPath>     Custom parameters to the providers used. [default: {}]
-  --coefficients=<json>                      Custom formula coefficients [default: {"mem":1.0,"cpu":1000.0,"apdex":1000.0,"rpm":1000.0,"total":1000.0}]
+  --coefficients=<json>                      Custom formula coefficients [default: {"endpoints":0.0,"mem":1.0,"cpu":1000.0,"apdex":1000.0,"rpm":1000.0,"total":1000.0}]
 
 
 Author:
@@ -89,7 +89,7 @@ def main():
     except ValueError:
         print("Invalid --codeInfoProvider")
         exit(-4)
-    print(ms_runtime_data)
+    print("\r\nInstances:\r\n %s" % ms_runtime_data)
     mswyw_score = calc_mswyw (ms_runtime_data, ms_code_info_data, formula_coefficients)
     end_time = datetime.datetime.now()
     print("\r\n--------------------------------------------------")

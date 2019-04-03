@@ -16,7 +16,25 @@ def compute_params(extra_args):
     api_key = extra_args["%s.APIKEY" % __name__]
     app_instance_ids = _get_app_instance_ids(app_id, api_key)
     metric_dicts = [_get_app_instance_metrics(app_id, api_key, instance_id) for instance_id in app_instance_ids]
+    for instance_id, metrics in zip(app_instance_ids, metric_dicts):
+        # we could cheat and instead of looping we could get for the 1st and assume they are all equal. just for speed.
+        metrics["endpoints"] = _get_number_of_endpoints(app_id, api_key, instance_id)
+        metrics["_id"]=instance_id
     return metric_dicts
+
+def _get_number_of_endpoints(app_id, api_key, instance_id):
+    url = "https://api.newrelic.com/v2/applications/%s/instances/%s/metrics.xml" % (app_id, instance_id)
+    newrelic_result = connect_and_get(url, api_key)
+    if newrelic_result.status_code != 200:
+        raise ValueError(json.loads(newrelic_result.text)["error"]["title"])
+    root = ET.fromstring(newrelic_result.content)
+    all_metric_names_as_nodes = root.findall(".//metrics/metric/name")
+    all_metric_names = [service_name_as_node.text for service_name_as_node in all_metric_names_as_nodes]
+    #print("\n".join(sorted(all_metric_names)))
+    web_services = [service_name_as_node.text for service_name_as_node in all_metric_names_as_nodes if service_name_as_node.text.startswith("WebTransaction/")] # WebTransaction/RestWebService/ does not work for SpringBoot
+    #print("\n".join(sorted(web_services)))
+    return len(web_services)
+
 
 def _get_app_instance_ids(app_id, api_key):
     url = "https://api.newrelic.com/v2/applications/%s/instances.json" % app_id
