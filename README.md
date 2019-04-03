@@ -23,6 +23,22 @@ Examples of *COST* attributes:
 * Amount of CPU percentage used by each of your replicas. You also pay for CPU. A smaller machine with 
   optimized/faster code will cost you less.
 
+Currently the formula is (note that a,b,c etc are just coefficients which you can tweak - we provide defaults):
+
+`
+mswyw = a * [( b * APDEX + c * RPM) / (d * mem + e * cpu)]
+`
+
+The coefficients can be overriden passing --coefficients as a json, with these key names for teh coefficients:
+
+- a: "total"
+- b: "apdex"
+- c: "rpm"
+- d: "mem"
+- e: "cpu"
+
+Don't worry, we provide defaults. But you can tweak when you want. FOr example, use 0.0 for a coefficient to kick
+that element our of the formula (say "I don't want rpm to have any influence on it" - pass "rpm":0.0).
 
 
 ## Motivation
