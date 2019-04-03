@@ -14,12 +14,15 @@ import json
 def compute_params(extra_args):
     app_id = extra_args["%s.APPID" % __name__]
     api_key = extra_args["%s.APIKEY" % __name__]
-    app_instance_ids = _get_app_instance_ids(app_id, api_key)
+    app_instance_ids_and_language = _get_app_instance_ids_and_language(app_id, api_key)
+    app_instance_ids = [id_and_language[0] for id_and_language in app_instance_ids_and_language]
+    app_instance_languages = [id_and_language[1] for id_and_language in app_instance_ids_and_language]
     metric_dicts = [_get_app_instance_metrics(app_id, api_key, instance_id) for instance_id in app_instance_ids]
-    for instance_id, metrics in zip(app_instance_ids, metric_dicts):
+    for instance_id, language, metrics in zip(app_instance_ids, app_instance_languages, metric_dicts):
         # we could cheat and instead of looping we could get for the 1st and assume they are all equal. just for speed.
         metrics["endpoints"] = _get_number_of_endpoints(app_id, api_key, instance_id)
         metrics["_id"]=instance_id
+        metrics["_lang"] = language
     return metric_dicts
 
 def _get_number_of_endpoints(app_id, api_key, instance_id):
@@ -36,13 +39,13 @@ def _get_number_of_endpoints(app_id, api_key, instance_id):
     return len(web_services)
 
 
-def _get_app_instance_ids(app_id, api_key):
+def _get_app_instance_ids_and_language(app_id, api_key):
     url = "https://api.newrelic.com/v2/applications/%s/instances.json" % app_id
     newrelic_result = connect_and_get(url,api_key)
     if newrelic_result.status_code != 200:
         raise ValueError(json.loads(newrelic_result.text)["error"]["title"])
     json_reply = newrelic_result.json()
-    return [instance["id"] for instance in json_reply["application_instances"]]
+    return [[instance["id"],instance["language"]] for instance in json_reply["application_instances"]]
 
 
 def _get_app_instance_metrics(app_id, api_key, instance_id):
