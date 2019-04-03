@@ -64,7 +64,14 @@ Example:
 `
 mswyw --runtimeProvider=nrelic 
       --codeInfoProvider={"loc":120,"lang":"java"} 
-      --providerParams={"nrelic.ACCOUNT":"123456","nrelic.APIKEY":"ABCDEFG"}
+      --providerParams={"nrelic.APPID":"123456","nrelic.APIKEY":"ABCDEFG"}
+`
+
+You can also get consolidated results for a collection of apps by name (regex) if you prefer:
+`
+mswyw --runtimeProvider=nrelic 
+      --codeInfoProvider={"loc":120,"lang":"java"} 
+      --providerParams={"nrelic.APPS":"foo.*bar$","nrelic.APIKEY":"ABCDEFG"}
 `
 
 
