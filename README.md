@@ -74,23 +74,18 @@ in the form of a fully qualified name of a Python module that implements the API
 If, instead, the value you provide is a literal json, we will use that instead. If the value is a valid file path, 
 we assume it is a json file with the values we need.
 
-You also need the same for info about the code (lines of code, language, etc). The same applies here about the value 
-being either a fully qualified name of a module or a literal json or a json file.
-
 Currently the only runtimeProvider supported is New Relic (nrelic, the default by the way) but we also plan to add Elastic APM support.
 
 Example:
 
 `
 mswyw --runtimeProvider=nrelic 
-      --codeInfoProvider={"loc":120,"lang":"java"} 
       --providerParams={"nrelic.APPID":"123456","nrelic.APIKEY":"ABCDEFG"}
 `
 
 You can also get consolidated results for a collection of apps by name (regex) if you prefer:
 `
 mswyw --runtimeProvider=nrelic 
-      --codeInfoProvider={"loc":120,"lang":"java"} 
       --providerParams={"nrelic.APPS":"foo.*bar$","nrelic.APIKEY":"ABCDEFG"}
 `
 
