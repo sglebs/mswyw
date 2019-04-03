@@ -26,7 +26,7 @@ Examples of *COST* attributes:
 Currently the formula is (note that a,b,c etc are just coefficients which you can tweak - we provide defaults):
 
 `
-mswyw = a * [( b * APDEX + c * RPM) / (d * mem + e * cpu)]
+mswyw = a * [( b * APDEX + c * RPM + d * endpoints) / (e * mem + f * cpu)]
 `
 
 The coefficients can be overriden passing --coefficients as a json, with these key names for teh coefficients:
@@ -34,11 +34,12 @@ The coefficients can be overriden passing --coefficients as a json, with these k
 - a: "total"
 - b: "apdex"
 - c: "rpm"
-- d: "mem"
-- e: "cpu"
+- d: "endpoints"
+- e: "mem"
+- f: "cpu"
 
 Don't worry, we provide defaults. But you can tweak when you want. For example, use 0.0 for a coefficient to kick
-that element our of the formula (say "I don't want rpm to have any influence on it" - pass "rpm":0.0).
+that element our of the formula (say "I don't want number of endpoints to have any influence on it" - pass "endpoints":0.0).
 
 
 ## Motivation
