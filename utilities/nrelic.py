@@ -64,6 +64,8 @@ def _get_app_instance_metrics(app_id, api_key, instance_id):
     url = "https://api.newrelic.com/v2/applications/%s/instances/%s/metrics/data.xml?names[]=Memory/Physical&names[]=Apdex&names[]=CPU/User/Utilization&names[]=WebTransactionTotalTime&names[]=Errors/all&summarize=true" % (app_id,instance_id)
     newrelic_result = connect_and_get(url,api_key)
     root = ET.fromstring(newrelic_result.content)
+    if newrelic_result.status_code != 200:
+        raise ValueError(root.find(".//title").text)
     memory_usage = root.find(".//metrics/metric/[name='Memory/Physical']/timeslices/timeslice/values/used_bytes_by_host")
     apdex = root.find(".//metrics/metric/[name='Apdex']/timeslices/timeslice/values/score")
     cpu_percent = root.find(".//metrics/metric/[name='CPU/User/Utilization']/timeslices/timeslice/values/percent")
