@@ -14,12 +14,14 @@ Examples of *VALUE* attributes:
 * Number of Function Points it implements (a measure of features/value to the user)
 * APDEX - a measure of user satisfaction with the performance of your (micro)service
 * Error Rate - a measure of user lack of satisfaction with your service
-* Average response time - the faster your service responds, the happier the consumers will be.
+* Requests per minute (rpm)- the more your service can take, the leaner it is to run.
   
 Examples of *COST* attributes:
 
-* Total amount of RAM used by all replicas of your (micro)service. You know that Amazon charges for that, right?
-* Total amount of vCPUs used by all your replicas. You also pay for that.
+* Total amount of RAM used by all replicas of your (micro)service. You know that Amazon charges for that, right? The
+  less memory you need, the cheaper the machine instance you can get away with.
+* Amount of CPU percentage used by each of your replicas. You also pay for CPU. A smaller machine with 
+  optimized/faster code will cost you less.
 
 
 
