@@ -3,13 +3,15 @@
 Usage:
   mswyw     --codeInfoProvider=<fqnOrJsonOrJsonPath> \r\n \
             [--providerParams=<fqnOrJsonOrJsonPath>] \r\n \
-            [--runtimeProvider=<fqnOrJsonOrJsonPath>]
+            [--runtimeProvider=<fqnOrJsonOrJsonPath>] \r\n \
+            [--coefficients=<json>]
 
 
 Options:
-  --runtimeProvider=<fqnOrJsonOrJsonPath>         Where to get runtime metrics. Either a fully qualified name of a python module or a json literal or json file. [default: nrelic]
-  --codeInfoProvider=<fqnOrJsonOrJsonPath>        Where to get code metrics. Either a fully qualified name of a python module or a json literal or json file.
-  --providerParams=<fqnOrJsonOrJsonPath>          Custom parameters to the providers used. [default:{}]
+  --runtimeProvider=<fqnOrJsonOrJsonPath>    Where to get runtime metrics. Either a fully qualified name of a python module or a json literal or json file. [default: nrelic]
+  --codeInfoProvider=<fqnOrJsonOrJsonPath>   Where to get code metrics. Either a fully qualified name of a python module or a json literal or json file.
+  --providerParams=<fqnOrJsonOrJsonPath>     Custom parameters to the providers used. [default: {}]
+  --coefficients=<json>                      Custom formula coefficients [default: {"mem":1.0,"cpu":1000.0,"apdex":1000.0,"rpm":1000.0,"total":1000.0}]
 
 
 Author:
@@ -51,15 +53,15 @@ def params_as_dict(fqnOrJsonOrJsonPath, extra_args):
                 raise ValueError()
             return provider_module.compute_params(extra_args)
 
-def calc_mswyw(ms_runtime_data, ms_code_info_data):
+def calc_mswyw(ms_runtime_data, ms_code_info_data, formula_coefficients):
     #TODO: we still need to take into account how many "features" each microservices contributes with (value)
     #we could infer function points from LOC based on Steve McConnel's material. Or let the user override
     total_cost = 0.0
     total_value = 0.0
     for metrics in ms_runtime_data:
-        total_cost += metrics["mem"] + 1000*metrics["cpu"]
-        total_value += 1000*metrics["apdex"] + 1000*metrics["rpm"]
-    return 1000 * (total_value / total_cost)
+        total_cost += formula_coefficients["mem"]*metrics["mem"] + formula_coefficients["cpu"]*metrics["cpu"]
+        total_value += formula_coefficients["apdex"]*metrics["apdex"] + formula_coefficients["rpm"]*metrics["rpm"]
+    return formula_coefficients["total"] * (total_value / total_cost)
 
 
 def main():
@@ -68,22 +70,27 @@ def main():
     print("\r\n====== mswyw by Marcio Marchini: marcio@BetterDeveloper.net ==========")
     print(arguments)
     try:
+        formula_coefficients = json.loads(arguments.get("--coefficients", "{}"))
+    except ValueError:
+        print("Invalid --coefficients")
+        exit(-1)
+    try:
         provider_params = params_as_dict(arguments.get("--providerParams", {}),"")
     except ValueError:
         print("Invalid --providerParams")
-        exit(-1)
+        exit(-2)
     try:
         ms_runtime_data = params_as_dict(arguments.get("--runtimeProvider"), provider_params)
     except ValueError as e:
         print("Invalid --runtimeProvider: %s" % repr(e))
-        exit(-2)
+        exit(-3)
     try:
         ms_code_info_data = params_as_dict(arguments.get("--codeInfoProvider"), provider_params)
     except ValueError:
         print("Invalid --codeInfoProvider")
-        exit(-3)
+        exit(-4)
     print(ms_runtime_data)
-    mswyw_score = calc_mswyw (ms_runtime_data, ms_code_info_data)
+    mswyw_score = calc_mswyw (ms_runtime_data, ms_code_info_data, formula_coefficients)
     end_time = datetime.datetime.now()
     print("\r\n--------------------------------------------------")
     print("Started : %s" % str(start_time))
