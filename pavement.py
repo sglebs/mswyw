@@ -11,6 +11,7 @@ setup(
     author_email='marcio@betterdeveloper.net',
     install_requires=[
         'docopt==0.6.2',
+        'elasticsearch==7.1.0',
         'requests==2.10.0',
         'requests-file'
     ],

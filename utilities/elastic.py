@@ -1,0 +1,88 @@
+import requests
+from requests.auth import HTTPBasicAuth
+from socket import error as SocketError
+import json
+from elasticsearch import Elasticsearch
+import datetime
+TIMEOUT=4 #seconds
+
+# These are the values we need in @extra_args
+# "elastic.URL", "elastic.USER", "elastic.PASSWORD", "elastic.APPS"
+def compute_params(extra_args):
+    base_url = extra_args.get("%s.URL" % __name__, "")
+    user = extra_args.get("%s.USER" % __name__, "")
+    password = extra_args.get("%s.PASSWORD" % __name__, "")
+    app_names = extra_args.get("%s.APPS" % __name__, "").split(",")
+    if len(app_names) == 0:
+        raise ValueError("No Apps found under the parameters provided: %s" % app_names)
+    end_time = datetime.datetime.now() #utcnow() ?
+#    current_time = datetime.datetime.now(datetime.timezone.utc)
+    start_time = end_time - datetime.timedelta(minutes=30)
+#    es = Elasticsearch([base_url], http_auth=(user, password), timeout=TIMEOUT)
+#    es.cluster.health(wait_for_status='yellow', request_timeout=TIMEOUT)
+#    search = es.search(index='test-index', filter_path=['hits.hits._id', 'hits.hits._type'], request_timeout=TIMEOUT)
+    result = []
+    for app_name in app_names:
+        metrics = _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time)
+        metrics["_appname"] = app_name
+        result.append(metrics)
+    return result
+
+def _extract_cpu_usage_from_series(series_array):
+    result = 0.0
+    for series in series_array:
+        if series["key"] == "processCPUMax":
+            result = series["overallValue"]
+    return result * 100 if result is not None else 0  # *100 to percentage as 0...100
+
+def _extract_memory_usage_from_series(series_array):
+    result = 0.0
+    for series in series_array:
+        if series["key"] == "memoryUsedMax":
+            result = series["overallValue"]
+    return result * 1024 * 1024 * 1024 if result is not None else 0  # from float GB to bytes
+
+def _extract_memory_and_cpu_usage_from_charts_data(charts_dict):
+    charts = charts_dict["charts"]
+    cpu_usage = 0.0
+    mem_usage = 0.0
+    for chart in charts:
+        if chart["key"] == "cpu_usage_chart":
+            cpu_usage = _extract_cpu_usage_from_series (chart["series"])
+        if chart["key"] == "memory_usage_chart":
+            mem_usage = _extract_memory_usage_from_series(chart["series"])
+    return [cpu_usage, mem_usage]
+
+def _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time):
+    url = "%s/%s/metrics/charts?start=%s&end=%s&agentName=java&uiFilters=" % (base_url, app_name, start_time.isoformat(), end_time.isoformat())
+    charts_response = connect_and_get (url, user, password)
+    if not charts_response.ok:
+        raise ValueError("Response error opening %s" % url)
+    charts_dict = json.loads(charts_response.content)
+    cpu , memory = _extract_memory_and_cpu_usage_from_charts_data (charts_dict)
+    return {"mem":int(memory),
+            "endpoints": 0, # TODO
+            "apdex": 0, # TODO
+            "cpu": float(cpu),
+            "rpm": 0,   # TODO
+            "epm": 0    # TODO
+            }
+
+
+
+def connect_and_get (url, user, password, verify=True, timeout=TIMEOUT):
+    auth = HTTPBasicAuth(user, password)
+    return _get(url, auth, verify=verify, timeout=timeout)
+
+def _get (url, auth, verify=True, timeout=TIMEOUT):
+    try:
+        return requests.get(url, auth=auth, verify=verify, timeout=timeout)
+    except requests.exceptions.ConnectionError as ce:
+        raise ValueError("Connection error opening %s" % url)
+    except SocketError as se:
+        raise ValueError("Socket error opening %s" % url)
+    except requests.exceptions.ReadTimeout as rt:
+        raise ValueError("Read timeout opening %s" % url)
+    except requests.exceptions.ChunkedEncodingError as cee:
+        raise ValueError("Encoding error opening %s" % url)
+

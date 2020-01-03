@@ -66,7 +66,10 @@ def calc_mswyw(ms_runtime_data, formula_coefficients):
         total_value += formula_coefficients["apdex"]*metrics["apdex"] + \
                        formula_coefficients["rpm"]*metrics["rpm"] + \
                        formula_coefficients["endpoints"]*metrics["endpoints"]
-    return formula_coefficients["total"] * (total_value / total_cost)
+    if total_cost <= 0.0:
+        return 0.0
+    else:
+        return formula_coefficients["total"] * (total_value / total_cost)
 
 
 def sanitize_coefficients(coefs):
