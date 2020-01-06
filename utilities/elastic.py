@@ -2,7 +2,6 @@ import requests
 from requests.auth import HTTPBasicAuth
 from socket import error as SocketError
 import json
-#from elasticsearch import Elasticsearch
 import datetime
 TIMEOUT=4 #seconds
 
@@ -15,12 +14,8 @@ def compute_metrics(plugin_specific_extra_args):
     app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "").split(",")
     if len(app_names) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
-    end_time = datetime.datetime.now() #utcnow() ?
-#    current_time = datetime.datetime.now(datetime.timezone.utc)
+    end_time = datetime.datetime.now()
     start_time = end_time - datetime.timedelta(minutes=30)
-#    es = Elasticsearch([base_url], http_auth=(user, password), timeout=TIMEOUT)
-#    es.cluster.health(wait_for_status='yellow', request_timeout=TIMEOUT)
-#    search = es.search(index='test-index', filter_path=['hits.hits._id', 'hits.hits._type'], request_timeout=TIMEOUT)
     result = []
     for app_name in app_names:
         metrics = _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time)
@@ -84,7 +79,7 @@ def _get_app_instance_metrics(base_url, user, password, app_name, start_time, en
 
     return {"mem":int(memory),
             "endpoints": len(transations_list),
-            "apdex": 0, # TODO
+            "apdex": 0, # TODO APDEX implemented by hand via scripted field: https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11
             "cpu": float(cpu),
             "rpm": float(rpm),
             "epm": float(epm),
