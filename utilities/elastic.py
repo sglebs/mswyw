@@ -87,7 +87,8 @@ def _get_app_instance_metrics(base_url, user, password, app_name, start_time, en
             "apdex": 0, # TODO
             "cpu": float(cpu),
             "rpm": float(rpm),
-            "epm": float(epm)
+            "epm": float(epm),
+            "_lang": agent
             }
 
 
