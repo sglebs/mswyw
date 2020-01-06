@@ -10,16 +10,16 @@ import re
 # Metric names: https://rpm.newrelic.com/api/explore/application_instances/names?instance_id=nnnnnnnn&application_id=nnnnnnnn
 
 
-# These are the values we need in @extra_args
+# These are the values we need in @plugin_specific_extra_args
 # "nrelic.APPID", "nrelic.APIKEY"
-def compute_params(extra_args):
-    api_key = extra_args.get("%s.APIKEY" % __name__, "")
-    app_id = extra_args.get ("%s.APPID" % __name__,None)
+def compute_metrics(plugin_specific_extra_args):
+    api_key = plugin_specific_extra_args.get("%s.APIKEY" % __name__, "")
+    app_id = plugin_specific_extra_args.get ("%s.APPID" % __name__, None)
     app_ids = []
     if app_id:
         app_ids.append(app_id)
     else:
-        app_names = extra_args.get("%s.APPS" % __name__, "")
+        app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "")
         app_ids = _get_app_ids_by_name(app_names, api_key)
     if len(app_ids) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)

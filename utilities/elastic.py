@@ -2,17 +2,17 @@ import requests
 from requests.auth import HTTPBasicAuth
 from socket import error as SocketError
 import json
-from elasticsearch import Elasticsearch
+#from elasticsearch import Elasticsearch
 import datetime
 TIMEOUT=4 #seconds
 
-# These are the values we need in @extra_args
+# These are the values we need in @plugin_specific_extra_args
 # "elastic.URL", "elastic.USER", "elastic.PASSWORD", "elastic.APPS"
-def compute_params(extra_args):
-    base_url = extra_args.get("%s.URL" % __name__, "")
-    user = extra_args.get("%s.USER" % __name__, "")
-    password = extra_args.get("%s.PASSWORD" % __name__, "")
-    app_names = extra_args.get("%s.APPS" % __name__, "").split(",")
+def compute_metrics(plugin_specific_extra_args):
+    base_url = plugin_specific_extra_args.get("%s.URL" % __name__, "")
+    user = plugin_specific_extra_args.get("%s.USER" % __name__, "")
+    password = plugin_specific_extra_args.get("%s.PASSWORD" % __name__, "")
+    app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "").split(",")
     if len(app_names) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
     end_time = datetime.datetime.now() #utcnow() ?
@@ -60,8 +60,15 @@ def _get_app_instance_metrics(base_url, user, password, app_name, start_time, en
         raise ValueError("Response error opening %s" % url)
     charts_dict = json.loads(charts_response.content)
     cpu , memory = _extract_memory_and_cpu_usage_from_charts_data (charts_dict)
+
+    url = r'%s/%s/transaction_groups?start=%s&end=%s&&transactionType=request&uiFilters={"kuery":"transaction.type : \"request\""}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat())
+    transations_response = connect_and_get (url, user, password)
+    if not transations_response.ok:
+        raise ValueError("Response error opening %s" % url)
+    transations_list = json.loads(transations_response.content)
+
     return {"mem":int(memory),
-            "endpoints": 0, # TODO
+            "endpoints": len(transations_list), # TODO
             "apdex": 0, # TODO
             "cpu": float(cpu),
             "rpm": 0,   # TODO

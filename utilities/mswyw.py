@@ -34,7 +34,7 @@ def is_url(a_string):
     return URL_REGEX.match(a_string)
 
 
-def params_as_dict(fqn_or_json_orjson_path, extra_args):
+def params_as_dict(fqn_or_json_orjson_path):
     if os.path.isfile(fqn_or_json_orjson_path):
         with open(fqn_or_json_orjson_path) as input_file:
             return json.load(input_file)
@@ -42,14 +42,15 @@ def params_as_dict(fqn_or_json_orjson_path, extra_args):
         with urllib.request.urlopen(fqn_or_json_orjson_path) as url_connection:
             return json.loads(url_connection.read().decode('utf-8'))
     else:
-        try:  # literal json?
-            return json.loads(fqn_or_json_orjson_path)
-        except ValueError:
-            try:  # fully qualified name of python module?
-                provider_module = importlib.import_module(fqn_or_json_orjson_path)
-            except ModuleNotFoundError:
-                raise ValueError("Cannot resolve %s" % fqn_or_json_orjson_path)
-            return provider_module.compute_params(extra_args)
+        return json.loads(fqn_or_json_orjson_path)
+
+
+def load_and_init_plugin_by_name(plugin_name_as_fqn_python_module, plugin_specific_extra_args):
+    try:
+        provider_module = importlib.import_module(plugin_name_as_fqn_python_module)
+    except ModuleNotFoundError:
+        raise ValueError("Cannot resolve %s" % plugin_name_as_fqn_python_module)
+    return provider_module.compute_metrics(plugin_specific_extra_args)
 
 
 def calc_mswyw(ms_runtime_data, formula_coefficients):
@@ -91,8 +92,8 @@ def main():
     try:
         formula_coefficients = json.loads(arguments.get("--coefficients", "{}"))
         sanitize_coefficients(formula_coefficients)
-        provider_params = params_as_dict(arguments.get("--providerParams", {}), "")
-        ms_runtime_data = params_as_dict(arguments.get("--runtimeProvider"), provider_params)
+        provider_params = params_as_dict(arguments.get("--providerParams", {}))
+        ms_runtime_data = load_and_init_plugin_by_name(arguments.get("--runtimeProvider"), provider_params)
         mswyw_score = calc_mswyw(ms_runtime_data, formula_coefficients)
         end_time = datetime.datetime.now()
         print("\r\n--------------------------------------------------")
