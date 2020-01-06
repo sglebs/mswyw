@@ -61,7 +61,14 @@ def _extract_agent_rpm_epm_from_requests_data(perf_data_dict):
     return [perf_data["agentName"], perf_data["transactionsPerMinute"], perf_data["errorsPerMinute"]]
 
 def _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time):
-    url = "%s/%s/metrics/charts?start=%s&end=%s&agentName=java&uiFilters=" % (base_url, app_name, start_time.isoformat(), end_time.isoformat())
+    url = r'%s?start=%s&end=%s&uiFilters={"kuery":"transaction.type : \"request\" and service.name : \"%s\""}' % (base_url, start_time.isoformat(), end_time.isoformat(), app_name)
+    request_performance_response = connect_and_get (url, user, password)
+    if not request_performance_response.ok:
+        raise ValueError("Response error opening %s" % url)
+    request_performance_dict = json.loads(request_performance_response.content)
+    agent, rpm, epm = _extract_agent_rpm_epm_from_requests_data (request_performance_dict)
+
+    url = "%s/%s/metrics/charts?start=%s&end=%s&agentName=%s&uiFilters=" % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), agent)
     charts_response = connect_and_get (url, user, password)
     if not charts_response.ok:
         raise ValueError("Response error opening %s" % url)
@@ -74,12 +81,6 @@ def _get_app_instance_metrics(base_url, user, password, app_name, start_time, en
         raise ValueError("Response error opening %s" % url)
     transations_list = json.loads(transations_response.content)
 
-    url = r'%s?start=%s&end=%s&uiFilters={"kuery":"transaction.type : \"request\" and service.name : \"%s\""}' % (base_url, start_time.isoformat(), end_time.isoformat(), app_name)
-    request_performance_response = connect_and_get (url, user, password)
-    if not request_performance_response.ok:
-        raise ValueError("Response error opening %s" % url)
-    request_performance_dict = json.loads(request_performance_response.content)
-    agent, rpm, epm = _extract_agent_rpm_epm_from_requests_data (request_performance_dict)
 
     return {"mem":int(memory),
             "endpoints": len(transations_list),
