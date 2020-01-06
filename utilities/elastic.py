@@ -53,6 +53,13 @@ def _extract_memory_and_cpu_usage_from_charts_data(charts_dict):
             mem_usage = _extract_memory_usage_from_series(chart["series"])
     return [cpu_usage, mem_usage]
 
+def _extract_agent_rpm_epm_from_requests_data(perf_data_dict):
+    perf_data = perf_data_dict["items"]
+    if len(perf_data) <= 0:
+        raise ValueError("No RPM & EPM data available for app")
+    perf_data = perf_data[0]
+    return [perf_data["agentName"], perf_data["transactionsPerMinute"], perf_data["errorsPerMinute"]]
+
 def _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time):
     url = "%s/%s/metrics/charts?start=%s&end=%s&agentName=java&uiFilters=" % (base_url, app_name, start_time.isoformat(), end_time.isoformat())
     charts_response = connect_and_get (url, user, password)
@@ -61,18 +68,25 @@ def _get_app_instance_metrics(base_url, user, password, app_name, start_time, en
     charts_dict = json.loads(charts_response.content)
     cpu , memory = _extract_memory_and_cpu_usage_from_charts_data (charts_dict)
 
-    url = r'%s/%s/transaction_groups?start=%s&end=%s&&transactionType=request&uiFilters={"kuery":"transaction.type : \"request\""}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat())
+    url = r'%s/%s/transaction_groups?start=%s&end=%s&transactionType=request&uiFilters={"kuery":"transaction.type : \"request\""}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat())
     transations_response = connect_and_get (url, user, password)
     if not transations_response.ok:
         raise ValueError("Response error opening %s" % url)
     transations_list = json.loads(transations_response.content)
 
+    url = r'%s?start=%s&end=%s&uiFilters={"kuery":"transaction.type : \"request\" and service.name : \"%s\""}' % (base_url, start_time.isoformat(), end_time.isoformat(), app_name)
+    request_performance_response = connect_and_get (url, user, password)
+    if not request_performance_response.ok:
+        raise ValueError("Response error opening %s" % url)
+    request_performance_dict = json.loads(request_performance_response.content)
+    agent, rpm, epm = _extract_agent_rpm_epm_from_requests_data (request_performance_dict)
+
     return {"mem":int(memory),
-            "endpoints": len(transations_list), # TODO
+            "endpoints": len(transations_list),
             "apdex": 0, # TODO
             "cpu": float(cpu),
-            "rpm": 0,   # TODO
-            "epm": 0    # TODO
+            "rpm": float(rpm),
+            "epm": float(epm)
             }
 
 

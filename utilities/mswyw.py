@@ -45,7 +45,7 @@ def params_as_dict(fqn_or_json_orjson_path):
         return json.loads(fqn_or_json_orjson_path)
 
 
-def load_and_init_plugin_by_name(plugin_name_as_fqn_python_module, plugin_specific_extra_args):
+def compute_metrics(plugin_name_as_fqn_python_module, plugin_specific_extra_args):
     try:
         provider_module = importlib.import_module(plugin_name_as_fqn_python_module)
     except ModuleNotFoundError:
@@ -93,7 +93,7 @@ def main():
         formula_coefficients = json.loads(arguments.get("--coefficients", "{}"))
         sanitize_coefficients(formula_coefficients)
         provider_params = params_as_dict(arguments.get("--providerParams", {}))
-        ms_runtime_data = load_and_init_plugin_by_name(arguments.get("--runtimeProvider"), provider_params)
+        ms_runtime_data = compute_metrics(arguments.get("--runtimeProvider"), provider_params)
         mswyw_score = calc_mswyw(ms_runtime_data, formula_coefficients)
         end_time = datetime.datetime.now()
         print("\r\n--------------------------------------------------")
