@@ -74,36 +74,37 @@ def _get_app_instance_metrics(base_url, user, password, app_name, start_time, en
     request_containers_response_dict = json.loads(request_performance_response.content)
     container_ids = _extract_container_ids (request_containers_response_dict)
 
-    # TODO: for container_id in container_ids:
-    url = r'%s/s/apm/api/apm/services?start=%s&end=%s&uiFilters={"kuery":"transaction.type : \"request\" and service.name : \"%s\""}' % (base_url, start_time.isoformat(), end_time.isoformat(), app_name)
-    request_performance_response = connect_and_get (url, user, password)
-    if not request_performance_response.ok:
-        raise ValueError("Response error opening %s" % url)
-    request_performance_dict = json.loads(request_performance_response.content)
-    agent, rpm, epm = _extract_agent_rpm_epm_from_requests_data (request_performance_dict)
+    for container_id in container_ids:
+        #url = r'%s/s/apm/api/apm/services?start=%s&end=%s&uiFilters={"kuery":"transaction.type : \"request\" and service.name : \"%s\""}' % (base_url, start_time.isoformat(), end_time.isoformat(), app_name)
+        url = r'%s/s/apm/api/apm/services?start=%s&end=%s&uiFilters={"kuery":"transaction.type : \"request\" and container.id : \"%s\""}' % (base_url, start_time.isoformat(), end_time.isoformat(), container_id)
+        request_performance_response = connect_and_get (url, user, password)
+        if not request_performance_response.ok:
+            raise ValueError("Response error opening %s" % url)
+        request_performance_dict = json.loads(request_performance_response.content)
+        agent, rpm, epm = _extract_agent_rpm_epm_from_requests_data (request_performance_dict)
 
-    url = "%s/s/apm/api/apm/services/%s/metrics/charts?start=%s&end=%s&agentName=%s&uiFilters=" % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), agent)
-    charts_response = connect_and_get (url, user, password)
-    if not charts_response.ok:
-        raise ValueError("Response error opening %s" % url)
-    charts_dict = json.loads(charts_response.content)
-    cpu , memory = _extract_memory_and_cpu_usage_from_charts_data (charts_dict)
+        url = r'%s/s/apm/api/apm/services/%s/metrics/charts?start=%s&end=%s&agentName=%s&uiFilters={"containerId":["%s"]}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), agent, container_id)
+        charts_response = connect_and_get (url, user, password)
+        if not charts_response.ok:
+            raise ValueError("Response error opening %s" % url)
+        charts_dict = json.loads(charts_response.content)
+        cpu , memory = _extract_memory_and_cpu_usage_from_charts_data (charts_dict)
 
-    url = r'%s/s/apm/api/apm/services/%s/transaction_groups?start=%s&end=%s&transactionType=request&uiFilters={"kuery":"transaction.type : \"request\""}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat())
-    transations_response = connect_and_get (url, user, password)
-    if not transations_response.ok:
-        raise ValueError("Response error opening %s" % url)
-    transations_list = json.loads(transations_response.content)
+        url = r'%s/s/apm/api/apm/services/%s/transaction_groups?start=%s&end=%s&transactionType=request&uiFilters={"containerId":["%s"]}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), container_id)
+        transations_response = connect_and_get (url, user, password)
+        if not transations_response.ok:
+            raise ValueError("Response error opening %s" % url)
+        transations_list = json.loads(transations_response.content)
 
 
-    result.append ( {"mem":int(memory),
-            "endpoints": len(transations_list),
-            "apdex": 0, # TODO APDEX implemented by hand via scripted field: https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11
-            "cpu": float(cpu),
-            "rpm": float(rpm),
-            "epm": float(epm),
-            "_lang": agent,
-            "_appname": app_name } )
+        result.append ( {"mem":int(memory),
+                "endpoints": len(transations_list),
+                "apdex": 0, # TODO APDEX implemented by hand via scripted field: https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11
+                "cpu": float(cpu),
+                "rpm": float(rpm),
+                "epm": float(epm),
+                "_lang": agent,
+                "_appname": app_name } )
 
     return result
 
