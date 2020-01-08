@@ -19,17 +19,18 @@ Examples of *VALUE* attributes:
 Examples of *COST* attributes:
 
 * Total amount of RAM used by all replicas of your (micro)service. You know that Amazon charges for that, right? The
-  less memory you need, the cheaper the machine instance you can get away with.
+  less memory you need, the cheaper the machine instance you can get away with. It impacts you recurring expense.
 * Amount of CPU percentage used by each of your replicas. You also pay for CPU. A smaller machine with 
-  optimized/faster code will cost you less.
+  optimized/faster code will cost you less. Also a recurring expense on the cloud.
 
-Currently the formula is (note that a,b,c etc are just coefficients which you can tweak - we provide defaults):
+Currently the formula is:
 
 `
 mswyw = a * [( b * apdex + c * rpm + d * endpoints) / (e * mem + f * cpu + g * epm)]
 `
 
-The coefficients can be overriden passing --coefficients as a json, with these key names for teh coefficients:
+Note that a,b,c etc are just coefficients which you can override passing
+--coefficients as a json, with these key names for the coefficients:
 
 - a: "total"
 - b: "apdex"
@@ -40,7 +41,7 @@ The coefficients can be overriden passing --coefficients as a json, with these k
 - g: "epm"
 
 Don't worry, we provide defaults. But you can tweak when you want. For example, use 0.0 for a coefficient to kick
-that element our of the formula (say "I don't want number of endpoints to have any influence on it" - pass "endpoints":0.0).
+that element out of the formula (say "I don't want number of endpoints to have any influence on it" - pass "endpoints":0.0).
 
 
 ## Motivation
@@ -76,7 +77,7 @@ we assume it is a json file with the values we need.
 
 Currently the only runtimeProvider supported is New Relic (nrelic, the default by the way) but we also plan to add Elastic APM support.
 
-Example:
+Example/NewRelic:
 
 `
 mswyw --runtimeProvider=nrelic 
@@ -90,6 +91,17 @@ mswyw --runtimeProvider=nrelic
       --providerParams={"nrelic.APPS":"foo.*bar$","nrelic.APIKEY":"ABCDEFG"}
 `
 
+ElasticAPM via Kibana / Example:
+
+`
+mswyw --runtimeProvider=kibana 
+      --providerParams={"kibana.APPS":"foo", "kibana.URL":"http://kibana-apm.softplan.com.br",
+                        "kibana.USER":"myUser", "kibana.PASSWORD":"myPasswor"}
+`
+NOTE: 
+  * We still don't support regexes in kibana.APPS - just 1 app for now.
+  * APDEX will always be 0. It is not possible to fetch APDEX, even if you define it like https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11
+  
 
 ## Special Thanks
 
