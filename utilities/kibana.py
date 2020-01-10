@@ -7,7 +7,7 @@ TIMEOUT = 4  # seconds
 
 
 # These are the values we need in @plugin_specific_extra_args
-# "elastic.URL", "elastic.USER", "elastic.PASSWORD", "elastic.APPS"
+# "kibana.URL", "kibana.USER", "kibana.PASSWORD", "kibana.APPS"
 def compute_metrics(plugin_specific_extra_args):
     base_url = plugin_specific_extra_args.get("%s.URL" % __name__, "")
     user = plugin_specific_extra_args.get("%s.USER" % __name__, "")
@@ -55,7 +55,7 @@ def _extract_memory_and_cpu_usage_from_charts_data(charts_dict):
 def _extract_agent_rpm_epm_from_requests_data(perf_data_dict):
     perf_data = perf_data_dict["items"]
     if len(perf_data) <= 0:
-        raise ValueError("No RPM & EPM data available for app")
+        raise ValueError("No RPM & EPM data available for app in the period")
     perf_data = perf_data[0]
     return [perf_data["agentName"], perf_data["transactionsPerMinute"], perf_data["errorsPerMinute"]]
 
