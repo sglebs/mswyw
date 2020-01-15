@@ -15,10 +15,10 @@ def compute_metrics(plugin_specific_extra_args, interval_in_minutes):
     start_time = end_time - datetime.timedelta(minutes=interval_in_minutes)
     result = []
     es = Elasticsearch([base_url], http_auth=(user, password))
-    performance_search = es.search(index="apm-*", body= _get_cpu_ram_performance_query_as_dict(start_time, end_time, app_names))
+    performance_search = es.search(index="apm-*", body=_get_cpu_ram_performance_query_as_dict(start_time, end_time, app_names))
     result.extend(_extract_memory_and_cpu_usage_from_charts_data(performance_search))
 
-    #metrics_search = es.search(index="apm-*-metric-*", body= _get_tpm_epm_apdex_query_as_dict(start_time, end_time, app_names))
+    metrics_search = es.search(index="apm-*-metric-*", body=_get_tpm_epm_apdex_query_as_dict(start_time, end_time, app_names))
 
     return result
 
@@ -211,13 +211,8 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
         "7": {
           "avg": {
             "script": {
-            "source": "if ((!doc['transaction.duration.us'].empty) && (doc['transaction.duration.us'].size() > 0)) {
-                         def apdex_t = 500000;
-                         if (doc['transaction.duration.us'].value <= apdex_t) return 1;
-                         else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5;
-                              else return 0;
-                        } else return null;",
-              "lang": "painless"
+                "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = 500000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
+                "lang": "painless"
             }
           }
         },
@@ -239,12 +234,7 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
   "script_fields": {
     "apdex": {
       "script": {
-        "source": "if ((!doc['transaction.duration.us'].empty) && (doc['transaction.duration.us'].size() > 0)) {
-                     def apdex_t = 500000;
-                     if (doc['transaction.duration.us'].value <= apdex_t) return 1;
-                     else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5;
-                          else return 0;
-                    } else return null;",
+                "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = 500000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
         "lang": "painless"
       }
     }
