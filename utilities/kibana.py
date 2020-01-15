@@ -8,15 +8,15 @@ TIMEOUT = 4  # seconds
 
 # These are the values we need in @plugin_specific_extra_args
 # "kibana.URL", "kibana.USER", "kibana.PASSWORD", "kibana.APPS"
-def compute_metrics(plugin_specific_extra_args):
+def compute_metrics(plugin_specific_extra_args, interval_in_minutes):
     base_url = plugin_specific_extra_args.get("%s.URL" % __name__, "")
     user = plugin_specific_extra_args.get("%s.USER" % __name__, "")
     password = plugin_specific_extra_args.get("%s.PASSWORD" % __name__, "")
     app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "").split(",")
     if len(app_names) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
-    end_time = datetime.datetime.now()
-    start_time = end_time - datetime.timedelta(minutes=30)
+    end_time = datetime.datetime.utcnow()
+    start_time = end_time - datetime.timedelta(minutes=interval_in_minutes)
     result = []
     for app_name in app_names:
         metrics = _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time)
@@ -55,7 +55,7 @@ def _extract_memory_and_cpu_usage_from_charts_data(charts_dict):
 def _extract_agent_rpm_epm_from_requests_data(perf_data_dict):
     perf_data = perf_data_dict["items"]
     if len(perf_data) <= 0:
-        raise ValueError("No RPM & EPM data available for app in the period")
+        return ["", 0, 0]
     perf_data = perf_data[0]
     return [perf_data["agentName"], perf_data["transactionsPerMinute"], perf_data["errorsPerMinute"]]
 
@@ -71,7 +71,7 @@ def _extract_container_ids(filter_response_list):
 
 def _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time):
     result = []
-    url = r'%s/s/apm/api/apm/ui_filters/local_filters/metrics?start=%s&end=%s&uiFilters={}&filterNames=["host","containerId","podName"]&serviceName=%s' % (base_url, start_time.isoformat(), end_time.isoformat(), app_name)
+    url = r'%s/s/apm/api/apm/ui_filters/local_filters/metrics?start=%sZ&end=%sZ&uiFilters={}&filterNames=["host","containerId","podName"]&serviceName=%s' % (base_url, start_time.isoformat(), end_time.isoformat(), app_name)
     request_containers_response = connect_and_get(url, user, password)
     if not request_containers_response.ok:
         raise ValueError("Response error opening %s" % url)
@@ -86,14 +86,14 @@ def _get_app_instance_metrics(base_url, user, password, app_name, start_time, en
         request_performance_dict = json.loads(request_performance_response.content)
         agent, rpm, epm = _extract_agent_rpm_epm_from_requests_data(request_performance_dict)
 
-        url = r'%s/s/apm/api/apm/services/%s/metrics/charts?start=%s&end=%s&agentName=%s&uiFilters={"containerId":["%s"]}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), agent, container_id)
+        url = r'%s/s/apm/api/apm/services/%s/metrics/charts?start=%sZ&end=%sZ&agentName=%s&uiFilters={"containerId":["%s"]}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), agent, container_id)
         charts_response = connect_and_get(url, user, password)
         if not charts_response.ok:
             raise ValueError("Response error opening %s" % url)
         charts_dict = json.loads(charts_response.content)
         cpu, memory = _extract_memory_and_cpu_usage_from_charts_data(charts_dict)
 
-        url = r'%s/s/apm/api/apm/services/%s/transaction_groups?start=%s&end=%s&transactionType=request&uiFilters={"containerId":["%s"]}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), container_id)
+        url = r'%s/s/apm/api/apm/services/%s/transaction_groups?start=%sZ&end=%sZ&transactionType=request&uiFilters={"containerId":["%s"]}' % (base_url, app_name, start_time.isoformat(), end_time.isoformat(), container_id)
         transations_response = connect_and_get(url, user, password)
         if not transations_response.ok:
             raise ValueError("Response error opening %s" % url)

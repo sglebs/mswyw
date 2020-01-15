@@ -12,7 +12,7 @@ import re
 
 # These are the values we need in @plugin_specific_extra_args
 # "nrelic.APPID", "nrelic.APIKEY"
-def compute_metrics(plugin_specific_extra_args):
+def compute_metrics(plugin_specific_extra_args, interval_in_minutes):
     api_key = plugin_specific_extra_args.get("%s.APIKEY" % __name__, "")
     app_id = plugin_specific_extra_args.get ("%s.APPID" % __name__, None)
     app_ids = []

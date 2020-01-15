@@ -4,15 +4,15 @@ import json
 
 # These are the values we need in @plugin_specific_extra_args
 # "elastic.URL", "elastic.USER", "elastic.PASSWORD", "elastic.APPS"
-def compute_metrics(plugin_specific_extra_args):
+def compute_metrics(plugin_specific_extra_args, interval_in_minutes):
     base_url = plugin_specific_extra_args.get("%s.URL" % __name__, "")
     user = plugin_specific_extra_args.get("%s.USER" % __name__, "")
     password = plugin_specific_extra_args.get("%s.PASSWORD" % __name__, "")
     app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "")
     if len(app_names) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
-    end_time = datetime.datetime.now()
-    start_time = end_time - datetime.timedelta(minutes=30)
+    end_time = datetime.datetime.utcnow()
+    start_time = end_time - datetime.timedelta(minutes=interval_in_minutes)
     result = []
     es = Elasticsearch([base_url], http_auth=(user, password))
     performance_search = es.search(index="apm-*", body= _get_cpu_ram_performance_query_as_dict(start_time, end_time, app_names))
@@ -28,6 +28,7 @@ def _extract_memory_and_cpu_usage_from_charts_data(performance_search):
         for perf_by_container in service_ínfo_dict["host_name"]["buckets"]:
             service_data = {}
             service_data["_app_name"] = service_ínfo_dict["key"]
+            service_data["_container_id"] = perf_by_container["key"]
             service_data["mem"] = perf_by_container["ram_max"]["value"]
             service_data["cpu"] = perf_by_container["cpu_percent_max"]["value"]
             result.append(service_data)
@@ -61,7 +62,7 @@ QUERY_TEMPLATE_FOR_CPU_RAM = \
       "aggs": {
         "host_name": {
           "terms": {
-            "field": "host.name",
+            "field": "container.id",
             "order": {
               "_key": "desc"
             },
@@ -157,8 +158,8 @@ QUERY_TEMPLATE_FOR_CPU_RAM = \
           "range": {
             "@timestamp": {
               "format": "strict_date_optional_time",
-              "gte": "%s",
-              "lte": "%s"
+              "gte": "%sZ",
+              "lte": "%sZ"
             }
           }
         }
@@ -312,8 +313,8 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
           "range": {
             "@timestamp": {
               "format": "strict_date_optional_time",
-              "gte": "%s",
-              "lte": "%s"
+              "gte": "%sZ",
+              "lte": "%sZ"
             }
           } 
         }
