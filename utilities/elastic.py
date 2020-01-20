@@ -17,18 +17,22 @@ def compute_metrics(plugin_specific_extra_args, start_time, end_time):
     result.extend(_extract_memory_and_cpu_usage_from_charts_data(performance_search))
 
     metrics_search = es.search(index="apm-*", body=_get_tpm_epm_apdex_query_as_dict(start_time, end_time, app_names))
-    tpm_data = _extract_tpm_from_metrics_search(metrics_search)
+    interval_in_minutes = (end_time - start_time).seconds / 60
+    tpm_data = _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes)
 
     return result
 
-def _extract_tpm_from_metrics_search(metrics_search):
+def _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes):
     result = []
     for service_ínfo_dict in metrics_search["aggregations"]["service_name"]["buckets"]:
         service_name = service_ínfo_dict['key']
         apdex_avg = service_ínfo_dict['apdex_avg']['value']
         endpoints_count = service_ínfo_dict['trans_count']['value']
         error_ount = service_ínfo_dict['error_count']['value']
-        tpm_avg = service_ínfo_dict['1']['value']
+        epm = error_ount / interval_in_minutes
+        trans_ount = service_ínfo_dict['trans_count']['value']
+        tpm = trans_ount / interval_in_minutes
+        trans_duration_avg_us = service_ínfo_dict['trans_duration_avg_us']['value']
 
     return result
 
@@ -190,12 +194,12 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
       "terms": {
         "field": "service.name",
         "order": {
-          "1": "desc"
+          "trans_duration_avg_us": "desc"
         },
         "size": 1000
       },
       "aggs": {
-        "1": {
+        "trans_duration_avg_us": {
           "avg": {
             "field": "transaction.duration.us"
           }
