@@ -4,23 +4,34 @@ import json
 
 # These are the values we need in @plugin_specific_extra_args
 # "elastic.URL", "elastic.USER", "elastic.PASSWORD", "elastic.APPS"
-def compute_metrics(plugin_specific_extra_args, interval_in_minutes):
+def compute_metrics(plugin_specific_extra_args, start_time, end_time):
     base_url = plugin_specific_extra_args.get("%s.URL" % __name__, "")
     user = plugin_specific_extra_args.get("%s.USER" % __name__, "")
     password = plugin_specific_extra_args.get("%s.PASSWORD" % __name__, "")
     app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "")
     if len(app_names) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
-    end_time = datetime.datetime.utcnow()
-    start_time = end_time - datetime.timedelta(minutes=interval_in_minutes)
     result = []
     es = Elasticsearch([base_url], http_auth=(user, password))
     performance_search = es.search(index="apm-*", body=_get_cpu_ram_performance_query_as_dict(start_time, end_time, app_names))
     result.extend(_extract_memory_and_cpu_usage_from_charts_data(performance_search))
 
-    metrics_search = es.search(index="apm-*-metric-*", body=_get_tpm_epm_apdex_query_as_dict(start_time, end_time, app_names))
+    metrics_search = es.search(index="apm-*", body=_get_tpm_epm_apdex_query_as_dict(start_time, end_time, app_names))
+    tpm_data = _extract_tpm_from_metrics_search(metrics_search)
 
     return result
+
+def _extract_tpm_from_metrics_search(metrics_search):
+    result = []
+    for service_ínfo_dict in metrics_search["aggregations"]["service_name"]["buckets"]:
+        service_name = service_ínfo_dict['key']
+        apdex_avg = service_ínfo_dict['apdex_avg']['value']
+        endpoints_count = service_ínfo_dict['trans_count']['value']
+        error_ount = service_ínfo_dict['error_count']['value']
+        tpm_avg = service_ínfo_dict['1']['value']
+
+    return result
+
 
 def _extract_memory_and_cpu_usage_from_charts_data(performance_search):
     result = []
@@ -175,7 +186,7 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
     """
 {
   "aggs": {
-    "2": {
+    "service_name": {
       "terms": {
         "field": "service.name",
         "order": {
@@ -198,17 +209,17 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
             "keyed": false
           }
         },
-        "4": {
+        "trans_count": {
           "cardinality": {
             "field": "transaction.id"
           }
         },
-        "6": {
+        "error_count": {
           "cardinality": {
             "field": "error.id"
           }
         },
-        "7": {
+        "apdex_avg": {
           "avg": {
             "script": {
                 "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = 500000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
@@ -216,7 +227,7 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
             }
           }
         },
-        "8": {
+        "trans_count": {
           "cardinality": {
             "field": "transaction.name"
           }

@@ -8,15 +8,13 @@ TIMEOUT = 4  # seconds
 
 # These are the values we need in @plugin_specific_extra_args
 # "kibana.URL", "kibana.USER", "kibana.PASSWORD", "kibana.APPS"
-def compute_metrics(plugin_specific_extra_args, interval_in_minutes):
+def compute_metrics(plugin_specific_extra_args, start_time, end_time):
     base_url = plugin_specific_extra_args.get("%s.URL" % __name__, "")
     user = plugin_specific_extra_args.get("%s.USER" % __name__, "")
     password = plugin_specific_extra_args.get("%s.PASSWORD" % __name__, "")
     app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "").split(",")
     if len(app_names) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
-    end_time = datetime.datetime.utcnow()
-    start_time = end_time - datetime.timedelta(minutes=interval_in_minutes)
     result = []
     for app_name in app_names:
         metrics = _get_app_instance_metrics(base_url, user, password, app_name, start_time, end_time)
