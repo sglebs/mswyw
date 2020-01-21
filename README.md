@@ -89,21 +89,7 @@ You can also get consolidated results for a collection of apps by name (regex) i
 `
 mswyw --runtimeProvider=nrelic 
       --providerParams={"nrelic.APPS":"foo.*bar$","nrelic.APIKEY":"ABCDEFG"}
-`
-
-ElasticAPM via Kibana / Example:
-
-Unfortunately the Kibana back-end does not have APDEX info, so you will have to pass it it via overrides (non-ideal):
-`
-mswyw --runtimeProvider=kibana 
-      --overrides={"apdex":0.9}
-      --providerParams={"kibana.APPS":"foo", "kibana.URL":"http://kibana-apm.softplan.com.br",
-                        "kibana.USER":"myUser", "kibana.PASSWORD":"myPasswor"}
-`
-NOTE: 
-  * We still don't support regexes in kibana.APPS - just 1 app for now.
-  * Use the "elastic" provider below to support APDEX.
-  
+`  
 
 ElasticAPM via Elastic indices / Example:
   
