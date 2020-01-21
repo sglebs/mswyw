@@ -20,10 +20,13 @@ def compute_metrics(plugin_specific_extra_args, start_time, end_time):
     interval_in_minutes = (end_time - start_time).seconds / 60
     tpm_data = _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes)
 
+    for service_info in result:
+        tpm_data_for_app = tpm_data [service_info["_app_name"]]
+        service_info.update(tpm_data_for_app)
     return result
 
 def _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes):
-    result = []
+    result = {}
     for service_ínfo_dict in metrics_search["aggregations"]["service_name"]["buckets"]:
         service_name = service_ínfo_dict['key']
         apdex_avg = service_ínfo_dict['apdex_avg']['value']
@@ -33,6 +36,12 @@ def _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes):
         trans_ount = service_ínfo_dict['trans_count']['value']
         tpm = trans_ount / interval_in_minutes
         trans_duration_avg_us = service_ínfo_dict['trans_duration_avg_us']['value']
+
+        result[service_name] = {"endpoints": endpoints_count,
+                       "apdex": apdex_avg,
+                       "rpm": float(tpm),
+                       "epm": float(epm),
+                       "_appname": service_name}
 
     return result
 
