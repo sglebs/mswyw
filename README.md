@@ -19,17 +19,18 @@ Examples of *VALUE* attributes:
 Examples of *COST* attributes:
 
 * Total amount of RAM used by all replicas of your (micro)service. You know that Amazon charges for that, right? The
-  less memory you need, the cheaper the machine instance you can get away with.
+  less memory you need, the cheaper the machine instance you can get away with. It impacts you recurring expense.
 * Amount of CPU percentage used by each of your replicas. You also pay for CPU. A smaller machine with 
-  optimized/faster code will cost you less.
+  optimized/faster code will cost you less. Also a recurring expense on the cloud.
 
-Currently the formula is (note that a,b,c etc are just coefficients which you can tweak - we provide defaults):
+Currently the formula is:
 
 `
 mswyw = a * [( b * apdex + c * rpm + d * endpoints) / (e * mem + f * cpu + g * epm)]
 `
 
-The coefficients can be overriden passing --coefficients as a json, with these key names for teh coefficients:
+Note that a,b,c etc are just coefficients which you can override passing
+--coefficients as a json, with these key names for the coefficients:
 
 - a: "total"
 - b: "apdex"
@@ -40,7 +41,7 @@ The coefficients can be overriden passing --coefficients as a json, with these k
 - g: "epm"
 
 Don't worry, we provide defaults. But you can tweak when you want. For example, use 0.0 for a coefficient to kick
-that element our of the formula (say "I don't want number of endpoints to have any influence on it" - pass "endpoints":0.0).
+that element out of the formula (say "I don't want number of endpoints to have any influence on it" - pass "endpoints":0.0).
 
 
 ## Motivation
@@ -76,7 +77,7 @@ we assume it is a json file with the values we need.
 
 Currently the only runtimeProvider supported is New Relic (nrelic, the default by the way) but we also plan to add Elastic APM support.
 
-Example:
+Example/NewRelic:
 
 `
 mswyw --runtimeProvider=nrelic 
@@ -90,6 +91,31 @@ mswyw --runtimeProvider=nrelic
       --providerParams={"nrelic.APPS":"foo.*bar$","nrelic.APIKEY":"ABCDEFG"}
 `
 
+ElasticAPM via Kibana / Example:
+
+Unfortunately the Kibana back-end does not have APDEX info, so you will have to pass it it via overrides (non-ideal):
+`
+mswyw --runtimeProvider=kibana 
+      --overrides={"apdex":0.9}
+      --providerParams={"kibana.APPS":"foo", "kibana.URL":"http://kibana-apm.softplan.com.br",
+                        "kibana.USER":"myUser", "kibana.PASSWORD":"myPasswor"}
+`
+NOTE: 
+  * We still don't support regexes in kibana.APPS - just 1 app for now.
+  * Use the "elastic" provider below to support APDEX.
+  
+
+ElasticAPM via Elastic indices / Example:
+  
+  APDEX calculation depends on the ["T" value in seconds](https://docs.newrelic.com/docs/apm/new-relic-apm/apdex/apdex-measure-user-satisfaction) via "elastic.APDEX_T" (the default is 0.5 seconds). 
+  It is needed so we can [compute the APDEX on Elastic data](https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11 ).
+`
+mswyw --runtimeProvider=elastic 
+      --providerParams={"elastic.APPS":"foo", "elastic.URL":"http://elastic.softplan.com.br:9200",
+                        "elastic.USER":"myUser", "elastic.PASSWORD":"myPasswor", "elastic.APDEX_T": 2 }
+`
+
+The example above uses teh default value for APDEX_T.
 
 ## Special Thanks
 

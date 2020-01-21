@@ -10,16 +10,16 @@ import re
 # Metric names: https://rpm.newrelic.com/api/explore/application_instances/names?instance_id=nnnnnnnn&application_id=nnnnnnnn
 
 
-# These are the values we need in @extra_args
+# These are the values we need in @plugin_specific_extra_args
 # "nrelic.APPID", "nrelic.APIKEY"
-def compute_params(extra_args):
-    api_key = extra_args.get("%s.APIKEY" % __name__, "")
-    app_id = extra_args.get ("%s.APPID" % __name__,None)
+def compute_metrics(plugin_specific_extra_args, start_time, end_time):
+    api_key = plugin_specific_extra_args.get("%s.APIKEY" % __name__, "")
+    app_id = plugin_specific_extra_args.get ("%s.APPID" % __name__, None)
     app_ids = []
     if app_id:
         app_ids.append(app_id)
     else:
-        app_names = extra_args.get("%s.APPS" % __name__, "")
+        app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "")
         app_ids = _get_app_ids_by_name(app_names, api_key)
     if len(app_ids) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
@@ -46,10 +46,7 @@ def _get_number_of_endpoints(app_id, api_key, instance_id):
         raise ValueError(json.loads(newrelic_result.text)["error"]["title"])
     root = ET.fromstring(newrelic_result.content)
     all_metric_names_as_nodes = root.findall(".//metrics/metric/name")
-    all_metric_names = [service_name_as_node.text for service_name_as_node in all_metric_names_as_nodes]
-    #print("\n".join(sorted(all_metric_names)))
     web_services = [service_name_as_node.text for service_name_as_node in all_metric_names_as_nodes if service_name_as_node.text.startswith("WebTransaction/")] # WebTransaction/RestWebService/ does not work for SpringBoot
-    #print("\n".join(sorted(web_services)))
     return len(web_services)
 
 
