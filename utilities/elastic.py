@@ -24,27 +24,29 @@ def compute_metrics(plugin_specific_extra_args, start_time, end_time):
     tpm_data = _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes)
 
     for service_info in result:
-        tpm_data_for_app = tpm_data [service_info["_app_name"]]
-        service_info.update(tpm_data_for_app)
+        tpm_data_for_container = tpm_data [service_info["_container_id"]]
+        service_info.update(tpm_data_for_container)
     return result
 
 def _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes):
     result = {}
     for service_ínfo_dict in metrics_search["aggregations"]["service_name"]["buckets"]:
-        service_name = service_ínfo_dict['key']
-        apdex_avg = service_ínfo_dict['apdex_avg']['value']
-        endpoints_count = service_ínfo_dict['trans_count']['value']
-        error_ount = service_ínfo_dict['error_count']['value']
-        epm = error_ount / interval_in_minutes
-        trans_ount = service_ínfo_dict['trans_count']['value']
-        tpm = trans_ount / interval_in_minutes
-        trans_duration_avg_us = service_ínfo_dict['trans_duration_avg_us']['value']
-
-        result[service_name] = {"endpoints": endpoints_count,
-                       "apdex": apdex_avg,
-                       "rpm": float(tpm),
-                       "epm": float(epm),
-                       "_appname": service_name}
+        for container_info_dict in service_ínfo_dict["container_id"]["buckets"]:
+            service_name = service_ínfo_dict['key']
+            apdex_avg = container_info_dict['apdex_avg']['value']
+            endpoints_count = container_info_dict['trans_name_count']['value']
+            error_ount = container_info_dict['error_count']['value']
+            epm = error_ount / interval_in_minutes
+            trans_id_count = container_info_dict['trans_id_count']['value']
+            tpm = trans_id_count / interval_in_minutes
+            #trans_duration_avg_us = container_info_dict['trans_duration_avg_us']['value']
+            container_id = container_info_dict["key"]
+            result[container_id] = {"endpoints": endpoints_count,
+                           "apdex": apdex_avg,
+                           "rpm": float(tpm),
+                           "epm": float(epm),
+                           "_container_id": container_id,
+                           "_appname": service_name}
 
     return result
 
@@ -53,8 +55,7 @@ def _extract_memory_and_cpu_usage_from_charts_data(performance_search):
     result = []
     for service_ínfo_dict in performance_search["aggregations"]["service_name"]["buckets"]:
         for perf_by_container in service_ínfo_dict["host_name"]["buckets"]:
-            service_data = {}
-            service_data["_app_name"] = service_ínfo_dict["key"]
+            service_data = dict()
             service_data["_container_id"] = perf_by_container["key"]
             service_data["mem"] = perf_by_container["ram_max"]["value"]
             service_data["cpu"] = perf_by_container["cpu_percent_max"]["value"]
@@ -201,144 +202,148 @@ QUERY_TEMPLATE_FOR_CPU_RAM = \
 QUERY_TEMPLATE_FOR_TPM_EPM = \
     """
 {
-  "aggs": {
-    "service_name": {
-      "terms": {
-        "field": "service.name",
-        "order": {
-          "trans_duration_avg_us": "desc"
-        },
-        "size": 1000
-      },
-      "aggs": {
-        "trans_duration_avg_us": {
-          "avg": {
-            "field": "transaction.duration.us"
-          }
-        },
-        "3": {
-          "percentiles": {
-            "field": "transaction.duration.us",
-            "percents": [
-              95
-            ],
-            "keyed": false
-          }
-        },
-        "trans_count": {
-          "cardinality": {
-            "field": "transaction.id"
-          }
-        },
-        "error_count": {
-          "cardinality": {
-            "field": "error.id"
-          }
-        },
-        "apdex_avg": {
-          "avg": {
+    "aggs": {
+        "service_name": {
+            "terms": {
+                "field": "service.name",
+                "size": 1000
+            },
+            "aggs": {
+                "container_id": {
+                    "terms": {
+                        "field": "container.id"
+                    },
+                    "aggs": {
+                        "trans_duration_avg_us": {
+                            "avg": {
+                                "field": "transaction.duration.us"
+                            }
+                        },
+                        "3": {
+                            "percentiles": {
+                                "field": "transaction.duration.us",
+                                "percents": [
+                                    95
+                                ],
+                                "keyed": false
+                            }
+                        },
+                        "trans_id_count": {
+                            "cardinality": {
+                                "field": "transaction.id"
+                            }
+                        },
+                        "error_count": {
+                            "cardinality": {
+                                "field": "error.id"
+                            }
+                        },
+                        "apdex_avg": {
+                            "avg": {
+                                "script": {
+                                    "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = %s * 1000000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
+                                    "lang": "painless"
+                                }
+                            }
+                        },
+                        "trans_name_count": {
+                            "cardinality": {
+                                "field": "transaction.name"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "size": 0,
+    "_source": {
+        "excludes": []
+    },
+    "stored_fields": [
+        "*"
+    ],
+    "script_fields": {
+        "apdex": {
             "script": {
                 "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = %s * 1000000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
                 "lang": "painless"
             }
-          }
-        },
-        "trans_count": {
-          "cardinality": {
-            "field": "transaction.name"
-          }
         }
-      }
-    }
-  },
-  "size": 0,
-  "_source": {
-    "excludes": []
-  },
-  "stored_fields": [
-    "*"
-  ],
-  "script_fields": {
-    "apdex": {
-      "script": {
-                "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = %s * 1000000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
-        "lang": "painless"
-      }
-    }
-  },
-  "docvalue_fields": [
-    {
-      "field": "@timestamp",
-      "format": "date_time"
     },
-    {
-      "field": "event.created",
-      "format": "date_time"
-    },
-    {
-      "field": "event.end",
-      "format": "date_time"
-    },
-    {
-      "field": "event.start",
-      "format": "date_time"
-    },
-    {
-      "field": "file.accessed",
-      "format": "date_time"
-    },
-    {
-      "field": "file.created",
-      "format": "date_time"
-    },
-    {
-      "field": "file.ctime",
-      "format": "date_time"
-    },
-    {
-      "field": "file.mtime",
-      "format": "date_time"
-    },
-    {
-      "field": "process.start",
-      "format": "date_time"
-    }
-  ],
-  "query": {
-    "bool": {
-      "must": [
+    "docvalue_fields": [
         {
-          "match_all": {}
-        }
-      ],
-      "filter": [
-        {
-          "match_phrase": {
-            "service.name": {
-              "query": "%s"
-            }
-          }
+            "field": "@timestamp",
+            "format": "date_time"
         },
         {
-          "match_phrase": {
-            "transaction.type": {
-              "query": "request"
-            }
-          }
+            "field": "event.created",
+            "format": "date_time"
         },
         {
-          "range": {
-            "@timestamp": {
-              "format": "strict_date_optional_time",
-              "gte": "%sZ",
-              "lte": "%sZ"
-            }
-          } 
+            "field": "event.end",
+            "format": "date_time"
+        },
+        {
+            "field": "event.start",
+            "format": "date_time"
+        },
+        {
+            "field": "file.accessed",
+            "format": "date_time"
+        },
+        {
+            "field": "file.created",
+            "format": "date_time"
+        },
+        {
+            "field": "file.ctime",
+            "format": "date_time"
+        },
+        {
+            "field": "file.mtime",
+            "format": "date_time"
+        },
+        {
+            "field": "process.start",
+            "format": "date_time"
         }
-      ],
-      "should": [],
-      "must_not": []
+    ],
+    "query": {
+        "bool": {
+            "must": [
+                {
+                    "match_all": {}
+                }
+            ],
+            "filter": [
+                {
+                    "match_phrase": {
+                        "service.name": {
+                            "query": "%s"
+                        }
+                    }
+                },
+                {
+                    "match_phrase": {
+                        "transaction.type": {
+                            "query": "request"
+                        }
+                    }
+                },
+                {
+                    "range": {
+                        "@timestamp": {
+                            "format": "strict_date_optional_time",
+                            "gte": "%sZ",
+                            "lte": "%sZ"
+                        }
+                    }
+                }
+            ],
+            "should": [],
+            "must_not": []
+        }
     }
-  }
 }
     """
