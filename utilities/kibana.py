@@ -26,7 +26,7 @@ def _extract_cpu_usage_from_series(series_array):
     result = 0.0
     for series in series_array:
         if series["key"] == "processCPUMax":
-            result = series["overallValue"]
+            result = series["overallValue"]   # Process max (not system max)
     return result * 100 if result is not None else 0  # *100 to percentage as 0...100
 
 
