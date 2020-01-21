@@ -2,13 +2,16 @@ from elasticsearch import Elasticsearch
 import datetime
 import json
 
+DEFAULT_APDEX_T = 0.5  # seconds
+
 # These are the values we need in @plugin_specific_extra_args
-# "elastic.URL", "elastic.USER", "elastic.PASSWORD", "elastic.APPS"
+# "elastic.URL", "elastic.USER", "elastic.PASSWORD", "elastic.APPS", "elastic.APDEX_T"
 def compute_metrics(plugin_specific_extra_args, start_time, end_time):
     base_url = plugin_specific_extra_args.get("%s.URL" % __name__, "")
     user = plugin_specific_extra_args.get("%s.USER" % __name__, "")
     password = plugin_specific_extra_args.get("%s.PASSWORD" % __name__, "")
     app_names = plugin_specific_extra_args.get("%s.APPS" % __name__, "")
+    apdex_t = plugin_specific_extra_args.get("%s.APDEX_T" % __name__, DEFAULT_APDEX_T)
     if len(app_names) == 0:
         raise ValueError("No Apps found under the parameters provided: %s" % app_names)
     result = []
@@ -16,7 +19,7 @@ def compute_metrics(plugin_specific_extra_args, start_time, end_time):
     performance_search = es.search(index="apm-*", body=_get_cpu_ram_performance_query_as_dict(start_time, end_time, app_names))
     result.extend(_extract_memory_and_cpu_usage_from_charts_data(performance_search))
 
-    metrics_search = es.search(index="apm-*", body=_get_tpm_epm_apdex_query_as_dict(start_time, end_time, app_names))
+    metrics_search = es.search(index="apm-*", body=_get_tpm_epm_apdex_query_as_dict(start_time, end_time, app_names, apdex_t))
     interval_in_minutes = (end_time - start_time).seconds / 60
     tpm_data = _extract_tpm_from_metrics_search(metrics_search, interval_in_minutes)
 
@@ -65,9 +68,9 @@ def _get_cpu_ram_performance_query_as_dict (start_time, end_time, app_names):
     return json.loads(concrete_query)
 
 
-def _get_tpm_epm_apdex_query_as_dict (start_time, end_time, app_names):
+def _get_tpm_epm_apdex_query_as_dict (start_time, end_time, app_names, apdex_t):
     global QUERY_TEMPLATE_FOR_TPM_EPM
-    concrete_query = QUERY_TEMPLATE_FOR_TPM_EPM % (app_names, start_time.isoformat(), end_time.isoformat())
+    concrete_query = QUERY_TEMPLATE_FOR_TPM_EPM % (apdex_t, apdex_t, app_names, start_time.isoformat(), end_time.isoformat())
     return json.loads(concrete_query)
 
 
@@ -235,7 +238,7 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
         "apdex_avg": {
           "avg": {
             "script": {
-                "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = 500000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
+                "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = %s * 1000000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
                 "lang": "painless"
             }
           }
@@ -258,7 +261,7 @@ QUERY_TEMPLATE_FOR_TPM_EPM = \
   "script_fields": {
     "apdex": {
       "script": {
-                "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = 500000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
+                "source": "if((!doc['transaction.duration.us'].empty)&&(doc['transaction.duration.us'].size()>0)) { def apdex_t = %s * 1000000; if(doc['transaction.duration.us'].value<=apdex_t) return 1; else if (doc['transaction.duration.us'].value <= (apdex_t * 4)) return 0.5; else return 0;} else return null;",
         "lang": "painless"
       }
     }

@@ -93,16 +93,27 @@ mswyw --runtimeProvider=nrelic
 
 ElasticAPM via Kibana / Example:
 
+Unfortunately the Kibana back-end does not have APDEX info, so you will have to pass it it via overrides (non-ideal):
 `
 mswyw --runtimeProvider=kibana 
+      --overrides={"apdex":0.9}
       --providerParams={"kibana.APPS":"foo", "kibana.URL":"http://kibana-apm.softplan.com.br",
                         "kibana.USER":"myUser", "kibana.PASSWORD":"myPasswor"}
 `
 NOTE: 
   * We still don't support regexes in kibana.APPS - just 1 app for now.
-  * APDEX will always be 0. It is not possible to fetch APDEX, even if you define it like https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11
+  * Use the "elastic" provider below to support APDEX.
   
 
+ElasticAPM via Elastic indices / Example:
+  
+  APDEX calculation depends on the ["T" value in seconds](https://docs.newrelic.com/docs/apm/new-relic-apm/apdex/apdex-measure-user-satisfaction) via "elastic.APDEX_T". 
+  You will have to pass it in so we can [compute the APDEX on Elastic data](https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11 ) 
+`
+mswyw --runtimeProvider=elastic 
+      --providerParams={"elastic.APPS":"foo", "elastic.URL":"http://elastic.softplan.com.br:9200",
+                        "elastic.USER":"myUser", "elastic.PASSWORD":"myPasswor", "elastic.APDEX_T": 2 }
+`
 ## Special Thanks
 
 We would like to thank [Softplan](http://www.softplan.com.br) for supporting the development of this utility.  
