@@ -35,6 +35,8 @@ def _extract_memory_usage_from_series(series_array):
     for series in series_array:
         if series["key"] == "memoryUsedMax":
             result = series["overallValue"]
+
+    # FIXME. The number extracted is actually memory *percentage*. We can't figure out how to get memory in bytes :-(
     return result * 1024 * 1024 * 1024 if result is not None else 0  # from float GB to bytes
 
 
