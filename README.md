@@ -77,7 +77,7 @@ we assume it is a json file with the values we need.
 
 Currently the only runtimeProvider supported is New Relic (nrelic, the default by the way) but we also plan to add Elastic APM support.
 
-Example/NewRelic:
+### Example/NewRelic:
 
 `
 mswyw --runtimeProvider=nrelic 
@@ -91,10 +91,11 @@ mswyw --runtimeProvider=nrelic
       --providerParams={"nrelic.APPS":"foo.*bar$","nrelic.APIKEY":"ABCDEFG"}
 `  
 
-ElasticAPM via Elastic indices / Example:
+### ElasticAPM via Elastic indices / Example:
   
   APDEX calculation depends on the ["T" value in seconds](https://docs.newrelic.com/docs/apm/new-relic-apm/apdex/apdex-measure-user-satisfaction) via "elastic.APDEX_T" (the default is 0.5 seconds). 
   It is needed so we can [compute the APDEX on Elastic data](https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11 ).
+
 `
 mswyw --runtimeProvider=elastic 
       --providerParams={"elastic.APPS":"foo", "elastic.URL":"http://elastic.softplan.com.br:9200",
