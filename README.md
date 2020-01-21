@@ -107,13 +107,16 @@ NOTE:
 
 ElasticAPM via Elastic indices / Example:
   
-  APDEX calculation depends on the ["T" value in seconds](https://docs.newrelic.com/docs/apm/new-relic-apm/apdex/apdex-measure-user-satisfaction) via "elastic.APDEX_T". 
-  You will have to pass it in so we can [compute the APDEX on Elastic data](https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11 ) 
+  APDEX calculation depends on the ["T" value in seconds](https://docs.newrelic.com/docs/apm/new-relic-apm/apdex/apdex-measure-user-satisfaction) via "elastic.APDEX_T" (the default is 0.5 seconds). 
+  It is needed so we can [compute the APDEX on Elastic data](https://discuss.elastic.co/t/kibana-calculate-apdex-with-value-from-scripted-field/149845/11 ).
 `
 mswyw --runtimeProvider=elastic 
       --providerParams={"elastic.APPS":"foo", "elastic.URL":"http://elastic.softplan.com.br:9200",
                         "elastic.USER":"myUser", "elastic.PASSWORD":"myPasswor", "elastic.APDEX_T": 2 }
 `
+
+The example above uses teh default value for APDEX_T.
+
 ## Special Thanks
 
 We would like to thank [Softplan](http://www.softplan.com.br) for supporting the development of this utility.  
