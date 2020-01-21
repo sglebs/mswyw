@@ -57,8 +57,8 @@ def _extract_memory_and_cpu_usage_from_charts_data(performance_search):
         for perf_by_container in service_ínfo_dict["host_name"]["buckets"]:
             service_data = dict()
             service_data["_container_id"] = perf_by_container["key"]
-            service_data["mem"] = perf_by_container["ram_max"]["value"]
-            service_data["cpu"] = perf_by_container["cpu_percent_max"]["value"]
+            service_data["mem"] = perf_by_container["ram_used"]["value"]
+            service_data["cpu"] = perf_by_container["cpu_percent_max"]["value"] * 100 # equivalent to the system max in the Kibana GUI
             result.append(service_data)
     return result
 
@@ -112,9 +112,14 @@ QUERY_TEMPLATE_FOR_CPU_RAM = \
                 "field": "system.process.memory.size"
               }
             },
+            "ram_used": {
+              "max": {
+                "field": "system.process.memory.rss.bytes"
+              }
+            },
             "cpu_percent_max": {
               "max": {
-                "field": "system.cpu.total.norm.pct"
+                "field": "system.process.cpu.total.norm.pct"
               }
             }
           }
