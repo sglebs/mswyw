@@ -75,10 +75,11 @@ in the form of a fully qualified name of a Python module that implements the API
 If, instead, the value you provide is a literal json, we will use that instead. If the value is a valid file path, 
 we assume it is a json file with the values we need.
 
-Currently the only runtimeProvider supported is New Relic (nrelic, the default by the way) but we also plan to add Elastic APM support.
+Currently the runtime providers supported are New Relic (--runtimeProvider=nrelic) and Elastic APM (--runtimeProvider=elastic).
 
 ### Example/NewRelic:
 
+Remember: you need the paid version. The free version does not support the APIs we call.
 `
 mswyw --runtimeProvider=nrelic 
       --providerParams={"nrelic.APPID":"123456","nrelic.APIKEY":"ABCDEFG"}
@@ -102,7 +103,7 @@ mswyw --runtimeProvider=elastic
                         "elastic.USER":"myUser", "elastic.PASSWORD":"myPasswor", "elastic.APDEX_T": 2 }
 `
 
-The example above uses teh default value for APDEX_T.
+The example above uses the default value for APDEX_T.
 
 ## Special Thanks
 
