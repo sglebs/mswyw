@@ -3,6 +3,7 @@
 Usage:
   mswyw     --providerParams=<fqnOrJsonOrJsonPath> \r\n \
             [--runtimeProvider=<fqnOrJsonOrJsonPath>] \r\n \
+            [--calcProvider=<fqn>] \r\n \
             [--coefficients=<json>] \r\n \
             [--overrides=<json>] \r\n \
             [--interval=<integer>]\r\n \
@@ -11,6 +12,7 @@ Usage:
 
 Options:
   --runtimeProvider=<fqnOrJsonOrJsonPath>    Where to get runtime metrics. Either a fully qualified name of a python module or a json literal or json file. [default: nrelic]
+  --calcProvider=<fqn>                       Python module to use which has the formula which computes teh score. [default: formula]
   --providerParams=<fqnOrJsonOrJsonPath>     Custom parameters to the providers used. [default: {}]
   --coefficients=<json>                      Custom formula coefficients [default: {"endpoints":100.0,"mem":1.0,"cpu":1000.0,"apdex":1000.0,"rpm":1000.0,"epm":100.0,"total":1000.0}]
   --interval=<integer>                       Interval in minutes for the sampling [default: 30]
@@ -61,24 +63,12 @@ def compute_metrics(plugin_name_as_fqn_python_module, plugin_specific_extra_args
     return provider_module.compute_metrics(plugin_specific_extra_args, start_time, end_time)
 
 
-def calc_mswyw(ms_runtime_data, formula_coefficients, overrides):
-    # TODO: we still need to take into account how many "features" each microservices contributes with (value)
-    # for now we only use the number of endpoints
-    # we could infer function points from LOC based on Steve McConnel's material. But we have no place to get LOC.
-    # if we let the user provide LOC, it is a pain for when we are run in multiple apps mode
-    total_cost = 0.0
-    total_value = 0.0
-    for metrics in ms_runtime_data:
-        total_cost += formula_coefficients["mem"]* overrides.get("mem", metrics.get("mem", DEFAULT_VALUE_FOR_MISSING_MATRIC)) + \
-                      formula_coefficients["cpu"]*overrides.get("cpu", metrics.get("cpu", DEFAULT_VALUE_FOR_MISSING_MATRIC)) + \
-                      formula_coefficients["epm"]*overrides.get("epm", metrics.get("epm", DEFAULT_VALUE_FOR_MISSING_MATRIC))
-        total_value += formula_coefficients["apdex"]*overrides.get("apdex", metrics.get("apdex", DEFAULT_VALUE_FOR_MISSING_MATRIC)) + \
-                       formula_coefficients["rpm"]*overrides.get("rpm", metrics.get("rpm", DEFAULT_VALUE_FOR_MISSING_MATRIC)) + \
-                       formula_coefficients["endpoints"]*overrides.get("endpoints", metrics.get("endpoints", DEFAULT_VALUE_FOR_MISSING_MATRIC))
-    if total_cost <= 0.0:
-        return 0.0
-    else:
-        return formula_coefficients["total"] * (total_value / total_cost)
+def compute_formula(plugin_name_as_fqn_python_module, ms_runtime_data, formula_coefficients, overrid):
+    try:
+        calc_module = importlib.import_module(plugin_name_as_fqn_python_module)
+    except ModuleNotFoundError:
+        raise ValueError("Cannot resolve %s" % plugin_name_as_fqn_python_module)
+    return calc_module.calc_mswyw(ms_runtime_data, formula_coefficients, overrid, DEFAULT_VALUE_FOR_MISSING_MATRIC)
 
 
 def sanitize_coefficients(coefs):
@@ -107,7 +97,7 @@ def main():
         sampling_start_time = sampling_end_time - datetime.timedelta(minutes=interval_in_minutes)
         ms_runtime_data = compute_metrics(arguments.get("--runtimeProvider"), provider_params, sampling_start_time, sampling_end_time)
         overrides = json.loads(arguments.get("--overrides", "{}"))
-        mswyw_score = calc_mswyw(ms_runtime_data, formula_coefficients, overrides)
+        mswyw_score = compute_formula(arguments.get("--calcProvider"), ms_runtime_data, formula_coefficients, overrides)
         script_end_time = datetime.datetime.now()
         print("\r\n--------------------------------------------------")
         print("Sampling Start time: %sZ" % sampling_start_time.isoformat())

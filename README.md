@@ -23,8 +23,10 @@ Examples of *COST* attributes:
 * Amount of CPU percentage used by each of your replicas. You also pay for CPU. A smaller machine with 
   optimized/faster code will cost you less. Also a recurring expense on the cloud.
 
-Currently the formula is:
+## Formulas
 
+You can plug your own formula by passing --calcProvider=aPythonModule . Your module should implement
+1 simple python function (calc_mswyw). We provide a default implementation in module formula.py (default python module used):
 `
 mswyw = a * [( b * apdex + c * rpm + d * endpoints) / (e * mem + f * cpu + g * epm)]
 `
@@ -40,9 +42,11 @@ Note that a,b,c etc are just coefficients which you can override passing
 - f: "cpu"
 - g: "epm"
 
-Don't worry, we provide defaults. But you can tweak when you want. For example, use 0.0 for a coefficient to kick
+Don't worry, we provide default coefficient values as well. But you can tweak when you want. For example, use 0.0 for a coefficient to kick
 that element out of the formula (say "I don't want number of endpoints to have any influence on it" - pass "endpoints":0.0).
 
+Again, if you want a totally different formula just take a look at formula.py and implement your own module, 
+add it to PYTHONPATH and pass it in with --calcProvider.
 
 ## Motivation
 
