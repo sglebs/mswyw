@@ -63,12 +63,12 @@ def compute_metrics(plugin_name_as_fqn_python_module, plugin_specific_extra_args
     return provider_module.compute_metrics(plugin_specific_extra_args, start_time, end_time)
 
 
-def compute_formula(plugin_name_as_fqn_python_module, ms_runtime_data, formula_coefficients, overrid):
+def compute_formula(plugin_name_as_fqn_python_module, ms_runtime_data, formula_coefficients, overrides):
     try:
         calc_module = importlib.import_module(plugin_name_as_fqn_python_module)
     except ModuleNotFoundError:
         raise ValueError("Cannot resolve %s" % plugin_name_as_fqn_python_module)
-    return calc_module.calc_mswyw(ms_runtime_data, formula_coefficients, overrid, DEFAULT_VALUE_FOR_MISSING_MATRIC)
+    return calc_module.calc_mswyw(ms_runtime_data, formula_coefficients, overrides, DEFAULT_VALUE_FOR_MISSING_MATRIC)
 
 
 def sanitize_coefficients(coefs):
