@@ -6,6 +6,7 @@ Usage:
             [--calcProvider=<fqn>] \r\n \
             [--coefficients=<json>] \r\n \
             [--overrides=<json>] \r\n \
+            [--minResult=<float>] \r\n \
             [--interval=<integer>]\r\n \
             [--endMinutesAgo=<integer>]
 
@@ -18,6 +19,7 @@ Options:
   --interval=<integer>                       Interval in minutes for the sampling [default: 30]
   --endMinutesAgo=<integer>                  How many minutes ago (from now) the sampling interval ends. now=0, 1h ago=60, etc. [default: 0]
   --overrides=<json>                         Values to use in the formula instead of values measures. Useful for apdex on latforms without it. [default: {}]
+  --minResult=<float>                        The minimum accepted result value for the mswyw metric. If below minResult, exit with a non-zero code. [default: 0.0]
 
 Author:
   Marcio Marchini (marcio@BetterDeveloper.net)
@@ -111,6 +113,9 @@ def main():
         print("Total: %s" % str(script_end_time - script_start_time))
         print("mswyw score: %s" % str(mswyw_score))
         print("--------------------------------------------------")
+        min_result = params_as_dict(arguments.get("--minResult", 0.0))
+        if mswyw_score < min_result:
+            exit(-10)  # any non-zero value, really
     except ValueError as e:
         print("Problem: %s" % repr(e))
         exit(-1)
