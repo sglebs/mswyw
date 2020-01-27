@@ -110,6 +110,12 @@ mswyw --runtimeProvider=elastic
 
 The example above uses the default value for APDEX_T.
 
+## How to fail a build pipeline
+
+If you want to fail a build pipeline based on the mswyw score you can use the --minResult parameter.
+For example, if the mswyw score should be >= 0.5, you should pass --minResult=0.5
+You may want to do this while running stress tests, so you can evaluate how your microservice behaves.
+
 ## Special Thanks
 
 We would like to thank [Softplan](http://www.softplan.com.br) for supporting the development of this utility.  
