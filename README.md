@@ -105,7 +105,7 @@ mswyw --runtimeProvider=nrelic
 `
 mswyw --runtimeProvider=elastic 
       --providerParams={"elastic.APPS":"foo", "elastic.URL":"http://elastic.softplan.com.br:9200",
-                        "elastic.USER":"myUser", "elastic.PASSWORD":"myPasswor", "elastic.APDEX_T": 2 }
+                        "elastic.USER":"myUser", "elastic.PASSWORD":"myPassword", "elastic.APDEX_T": 2 }
 `
 
 The example above overrides the default value for APDEX_T.
