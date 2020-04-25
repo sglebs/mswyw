@@ -108,7 +108,7 @@ mswyw --runtimeProvider=elastic
                         "elastic.USER":"myUser", "elastic.PASSWORD":"myPasswor", "elastic.APDEX_T": 2 }
 `
 
-The example above uses the default value for APDEX_T.
+The example above overrides the default value for APDEX_T.
 
 ## How to fail a build pipeline
 
