@@ -6,7 +6,7 @@ Usage:
             [--runtimeProvider=<fqnOrJsonOrJsonPath>] \r\n \
             [--calcProvider=<fqn>] \r\n \
             [--coefficients=<json>] \r\n \
-            [--overrides=<json>] \r\n \
+            [--overrides=<fqnOrJsonOrJsonPath>] \r\n \
             [--minResult=<float>] \r\n \
             [--interval=<integer>]\r\n \
             [--endMinutesAgo=<integer>]
@@ -19,7 +19,7 @@ Options:
   --coefficients=<json>                      Custom formula coefficients [default: {"endpoints":100.0,"mem":1.0,"cpu":1000.0,"apdex":1000.0,"rpm":1000.0,"epm":100.0,"total":1000.0}]
   --interval=<integer>                       Interval in minutes for the sampling [default: 30]
   --endMinutesAgo=<integer>                  How many minutes ago (from now) the sampling interval ends. now=0, 1h ago=60, etc. [default: 0]
-  --overrides=<json>                         Values to use in the formula instead of values measures. Useful for apdex on latforms without it. [default: {}]
+  --overrides=<fqnOrJsonOrJsonPath>          Values to use in the formula instead of values measured. Useful for apdex on platforms without it. [default: {}]
   --minResult=<float>                        The minimum accepted result value for the mswyw metric. If below minResult, exit with a non-zero code. [default: 0.0]
   --verbose                                  If extra prints should me made in the output
 
@@ -75,6 +75,17 @@ def compute_formula(plugin_name_as_fqn_python_module, ms_runtime_data, formula_c
     return calc_module.calc_mswyw(ms_runtime_data, formula_coefficients, overrides, DEFAULT_VALUE_FOR_MISSING_MATRIC)
 
 
+def compute_overrides(plugin_name_as_fqn_python_module, cmdline_arguments):
+    try:
+        return params_as_dict(plugin_name_as_fqn_python_module)
+    except:
+        try:
+            overrides_module = importlib.import_module(plugin_name_as_fqn_python_module)
+            return overrides_module.compute_overrides(cmdline_arguments)
+        except ModuleNotFoundError:
+            return dict()
+
+
 def sanitize_coefficients(coefs):
     for name in ["total", "apdex", "rpm", "endpoints", "mem", "cpu", "epm"]:
         if name not in coefs:
@@ -116,7 +127,7 @@ def main():
         sampling_end_time = datetime.datetime.utcnow() - datetime.timedelta(minutes=end_minutes_ago)
         sampling_start_time = sampling_end_time - datetime.timedelta(minutes=interval_in_minutes)
         ms_runtime_data = compute_metrics(arguments.get("--runtimeProvider"), provider_params, sampling_start_time, sampling_end_time)
-        overrides = json.loads(arguments.get("--overrides", "{}"))
+        overrides = compute_overrides(arguments.get("--overrides", "{}"), arguments)
         mswyw_score = compute_formula(arguments.get("--calcProvider"), ms_runtime_data, formula_coefficients, overrides)
         script_end_time = datetime.datetime.now()
         result = dict()
