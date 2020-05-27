@@ -114,7 +114,7 @@ QUERY_TEMPLATE_FOR_CPU_RAM = \
             },
             "ram_used": {
               "max": {
-                "field": "system.process.memory.rss.bytes"
+                "field": "system.process.memory.size"
               }
             },
             "cpu_percent_max": {
