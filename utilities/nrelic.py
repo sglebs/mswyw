@@ -46,8 +46,9 @@ def _get_number_of_endpoints(app_id, api_key, instance_id):
         raise ValueError(json.loads(newrelic_result.text)["error"]["title"])
     root = ET.fromstring(newrelic_result.content)
     all_metric_names_as_nodes = root.findall(".//metrics/metric/name")
-    web_services = [service_name_as_node.text for service_name_as_node in all_metric_names_as_nodes if service_name_as_node.text.startswith("WebTransaction/")] # WebTransaction/RestWebService/ does not work for SpringBoot
-    return len(web_services)
+    web_services = [service_name_as_node.text for service_name_as_node in all_metric_names_as_nodes if service_name_as_node.text.startswith("WebTransaction/") or service_name_as_node.text.startswith("Apdex/RestWebService/")] # WebTransaction/RestWebService/ does not work for SpringBoot
+    unique_web_services = set(web_services)
+    return len(unique_web_services)
 
 
 def _get_app_instance_ids_and_language(app_id, api_key):
