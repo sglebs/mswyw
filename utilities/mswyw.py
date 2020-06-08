@@ -135,6 +135,7 @@ def main():
         result["start-time"] = sampling_start_time.isoformat()
         result["end-time"] = sampling_end_time.isoformat()
         result["runtime-data"] = ms_runtime_data
+        result["overrides"] = overrides
         result["mswyw-score"] = mswyw_score
         min_result = params_as_dict(arguments.get("--minResult", 0.0))
         failed_performance = mswyw_score < min_result
