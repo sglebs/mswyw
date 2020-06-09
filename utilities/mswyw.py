@@ -128,6 +128,12 @@ def main():
         sampling_start_time = sampling_end_time - datetime.timedelta(minutes=interval_in_minutes)
         ms_runtime_data = compute_metrics(arguments.get("--runtimeProvider"), provider_params, sampling_start_time, sampling_end_time)
         overrides = compute_overrides(arguments.get("--overrides", "{}"), arguments)
+        # fix for #27 - Compute for each instance/container as well
+        for container_runtime_data in ms_runtime_data:
+            one_container_data = list()
+            one_container_data.append(container_runtime_data)
+            mswyw_score_for_individual_container = compute_formula(arguments.get("--calcProvider"), one_container_data, formula_coefficients, overrides)
+            container_runtime_data ["mswyw-score"] = mswyw_score_for_individual_container
         mswyw_score = compute_formula(arguments.get("--calcProvider"), ms_runtime_data, formula_coefficients, overrides)
         script_end_time = datetime.datetime.now()
         result = dict()
