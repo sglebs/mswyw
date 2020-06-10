@@ -44,6 +44,10 @@ DEFAULT_INTERVAL_IN_MINUTES=30
 DEFAULT_END_MINUTES_AGO=0
 DEFAULT_VALUE_FOR_MISSING_MATRIC = -1000
 
+SCORE_JSON_NAME = "mswyw-score"
+RUNTIME_DATA_JSON_NAME = "runtime-data"
+APP_RUNTIME_DATA_JSON_NAME = "app-runtime-data"
+
 def is_url(a_string):
     return URL_REGEX.match(a_string)
 
@@ -97,17 +101,21 @@ def sanitize_coefficients(coefs):
             raise ValueError("%s is set to %s, which is not a valid number" % (name, value))
 
 
-def report_verbose(arguments, ms_runtime_data, mswyw_score, sampling_end_time, sampling_start_time, script_end_time,
+def report_verbose(arguments, app_runtime_data, mswyw_score, sampling_end_time, sampling_start_time, script_end_time,
                    script_start_time):
     print("\r\n====== mswyw - see https://github.com/sglebs/mswyw ==========")
     print(arguments)
     print("\r\n--------------------------------------------------")
     print("Sampling Start time: %sZ" % sampling_start_time.isoformat())
     print("Sampling End time:   %sZ" % sampling_end_time.isoformat())
-    print("Instances:")
-    for runtime_data in ms_runtime_data:
-        print(runtime_data)
-    print("\r\n--------------------------------------------------")
+    print("Apps: %s" % len(app_runtime_data))
+    print("--------------------------------------------------")
+    for app_name, app_data in app_runtime_data.items():
+        print("%s : %s" % (app_name, app_data[SCORE_JSON_NAME]))
+        for runtime_data in app_data[RUNTIME_DATA_JSON_NAME]:
+            print(runtime_data)
+        print("")
+    print("--------------------------------------------------")
     print("Started : %s" % str(script_start_time))
     print("Finished: %s" % str(script_end_time))
     print("Total: %s" % str(script_end_time - script_start_time))
@@ -129,26 +137,24 @@ def main():
         ms_runtime_data = compute_metrics(arguments.get("--runtimeProvider"), provider_params, sampling_start_time, sampling_end_time)
         overrides = compute_overrides(arguments.get("--overrides", "{}"), arguments)
         # fix for #27 - Compute for each instance/container as well
-        for container_runtime_data in ms_runtime_data:
-            one_container_data = list()
-            one_container_data.append(container_runtime_data)
-            mswyw_score_for_individual_container = compute_formula(arguments.get("--calcProvider"), one_container_data, formula_coefficients, overrides)
-            container_runtime_data ["mswyw-score"] = mswyw_score_for_individual_container
+        compute_score_per_container(arguments, formula_coefficients, ms_runtime_data, overrides)
+        result = dict()
+        app_runtime_data = compute_score_per_app(arguments, formula_coefficients, ms_runtime_data, overrides)
+        result[APP_RUNTIME_DATA_JSON_NAME] = app_runtime_data
         mswyw_score = compute_formula(arguments.get("--calcProvider"), ms_runtime_data, formula_coefficients, overrides)
         script_end_time = datetime.datetime.now()
-        result = dict()
         result["arguments"] = arguments
         result["start-time"] = sampling_start_time.isoformat()
         result["end-time"] = sampling_end_time.isoformat()
-        result["runtime-data"] = ms_runtime_data
+        result[RUNTIME_DATA_JSON_NAME] = ms_runtime_data
         result["overrides"] = overrides
-        result["mswyw-score"] = mswyw_score
+        result[SCORE_JSON_NAME] = mswyw_score
         min_result = params_as_dict(arguments.get("--minResult", 0.0))
         failed_performance = mswyw_score < min_result
         result["failed-performance"] = failed_performance
 
         if arguments.get("--verbose", False):
-            report_verbose(arguments, ms_runtime_data, mswyw_score, sampling_end_time, sampling_start_time, script_end_time,
+            report_verbose(arguments, app_runtime_data, mswyw_score, sampling_end_time, sampling_start_time, script_end_time,
                        script_start_time)
         else:
             print(json.dumps(result, indent=4))
@@ -158,6 +164,30 @@ def main():
     except ValueError as e:
         print("Problem: %s" % repr(e))
         exit(-1)
+
+
+def compute_score_per_container(arguments, formula_coefficients, ms_runtime_data, overrides):
+    for container_runtime_data in ms_runtime_data:
+        one_container_data = list()
+        one_container_data.append(container_runtime_data)
+        mswyw_score_for_individual_container = compute_formula(arguments.get("--calcProvider"), one_container_data,
+                                                               formula_coefficients, overrides)
+        container_runtime_data[SCORE_JSON_NAME] = mswyw_score_for_individual_container
+
+def compute_score_per_app(arguments, formula_coefficients, ms_runtime_data, overrides):
+    app_names = [container_runtime_data["_appname"] for container_runtime_data in ms_runtime_data]
+    runtime_data_per_app = {app_name: list() for app_name in set(app_names)}
+    result = dict()
+    for container_runtime_data in ms_runtime_data:
+        runtime_data_per_app[container_runtime_data["_appname"]].append(container_runtime_data)
+    for app_name, app_containers_runtime_data in runtime_data_per_app.items():
+        mswyw_score_for_app = compute_formula(arguments.get("--calcProvider"), app_containers_runtime_data,
+                                                               formula_coefficients, overrides)
+        app_data = dict()
+        app_data[SCORE_JSON_NAME] = mswyw_score_for_app
+        app_data[RUNTIME_DATA_JSON_NAME] = app_containers_runtime_data
+        result[app_name]= app_data
+    return result
 
 
 if __name__ == '__main__':
