@@ -146,7 +146,6 @@ def main():
         result["arguments"] = arguments
         result["start-time"] = sampling_start_time.isoformat()
         result["end-time"] = sampling_end_time.isoformat()
-        result[RUNTIME_DATA_JSON_NAME] = ms_runtime_data
         result["overrides"] = overrides
         result[SCORE_JSON_NAME] = mswyw_score
         min_result = params_as_dict(arguments.get("--minResult", 0.0))
